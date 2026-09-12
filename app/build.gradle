@@ -11,8 +11,8 @@ android {
         applicationId "com.wangbuliao.todo"
         minSdk 26
         targetSdk 34
-        versionCode 10400
-        versionName '1.4.0'
+        versionCode 10401
+        versionName '1.4.1'
     }
 
     buildFeatures {
@@ -23,26 +23,22 @@ android {
         kotlinCompilerExtensionVersion '1.5.4'
     }
 
-    def kpFile = rootProject.file('keystore.properties')
-    if (kpFile.exists()) {
-        def kp = new Properties()
-        kpFile.withInputStream { kp.load(it) }
-        signingConfigs {
-            release {
-                storeFile rootProject.file('keystore/wbl.keystore')
-                storePassword kp.getProperty('storePassword')
-                keyAlias kp.getProperty('keyAlias')
-                keyPassword kp.getProperty('keyPassword')
-            }
+    signingConfigs {
+        release {
+            // v1.4.1 起：release 签名统一指向 debug keystore（真机在装包即 debug 签名，
+            // 此后 debug/release 同签名可直接覆盖安装，不再因签名不同卸载重装）。
+            // 旧 wbl.keystore 仅存档于 release/keystore-backup/，不再用于新包签名。
+            storeFile rootProject.file('keystore/wbl-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            if (rootProject.file('keystore.properties').exists()) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
         }
     }
 
