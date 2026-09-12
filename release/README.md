@@ -66,8 +66,24 @@ publish.py 其他模式：
 - **测速复验**（v1.2.4 测试版，复用 v1.2.3 APK 字节）：并行测速 UI「正在测速 5 条线路…」✓；被 DNS 毒化的 gh-proxy.com probe 失败（ConnectException）自动排除 ✓；最快线路下载+安装完成 ✓；测试版 Release/tag/网盘文件全删、json 回滚 10203 ✓
 - 教训：ghproxy.net 忽略 cb 按路径缓存 json（TTL 分钟级）→ 回滚后有短暂幽灵窗口，自愈
 
-## 官网主页
-GitHub Pages：**https://onono2012.github.io/wangbuliao-todo/** （源文件 `docs/index.html`，分支 main、路径 /docs；真机实测可达，页面动态拉取 wbl-update.json 展示最新版本与加速直链）
+## 官网主页（GitHub Pages）
+**https://onono2012.github.io/wangbuliao-todo/** （源文件 `docs/index.html`，分支 main、路径 /docs）
+
+- 页面加载时对全部下载线路做 HEAD 实测（no-cors，只测连通不耗流量），显示 ✓可用/⚠慢/✗不可达 徽章
+- 主按钮智能选路：本站 APK > GitHub 直链 > 各中转（按延迟排序），全挂时回退 Releases 页
+- 线路表：本站托管 / Releases 页 / github 直链 / ghproxy.net / ghfast.top / gh.llkk.cc / github.moeyy.xyz / gh-proxy.com
+- 实测（2026-09-12，运营商网络）：gh-proxy.com 被 DNS 毒化快速失败——**不要作为唯一中转**；ghproxy.net 与 github.io 稳定可达
+
+### 官网直下通道维护（docs/wbl-latest.apk）
+本站托管最新 APK，真机实测 206 下载可用（github.io 在国内运营商网络可达性优于 github.com）。
+**每次发布新版本**：
+1. `cp release/dist/wbl-vX.Y.Z-vcXXXXX.apk docs/wbl-latest.apk`
+2. `git add docs/ && git commit && git push`（github.com 可达时）
+3. **封锁期备用**：Git Data API 推大文件（走 api.github.com，绕开 github.com 封锁）：
+   `POST /git/blobs`(base64) → `GET /git/ref/heads/main` → `POST /git/trees`(base_tree 增量)
+   → `POST /git/commits`(parents=[远端头]) → `PATCH /git/refs/heads/main`(fast-forward)
+   注：~13MB blob 上传偶发 ConnectionAbort，重试即可（实测第 2 次成功，5.3s）
+4. Pages 约 1-2 分钟自动重建；验证：`curl -I https://onono2012.github.io/wangbuliao-todo/wbl-latest.apk`
 
 ## 旧版自建 OTA（v1.0.x 方案，已废弃仅存档）
 - v1.0.x 曾支持「设置 → 更新服务器地址」自定义 OTA 端点（`wbl_prefs.xml/update_url`），v1.1.0 起移除，残留旧配置无影响。
