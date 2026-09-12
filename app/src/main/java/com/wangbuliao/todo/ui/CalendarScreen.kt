@@ -77,6 +77,7 @@ fun CalendarScreen(vm: MainViewModel, ui: UiState) {
     WblScreenBackground {
         Scaffold(
             containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             floatingActionButton = {
                 ExtendedFloatingActionButton(
                     onClick = {

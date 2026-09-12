@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -66,6 +67,7 @@ import com.wangbuliao.todo.ui.EditTaskScreen
 import com.wangbuliao.todo.ui.MainViewModel
 import com.wangbuliao.todo.ui.Screen
 import com.wangbuliao.todo.ui.SettingsScreen
+import com.wangbuliao.todo.ui.ThemeScreen
 import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
 import com.wangbuliao.todo.ui.wblCardColor
@@ -152,6 +154,7 @@ class MainActivity : ComponentActivity() {
                             BackHandler(screen != Screen.List) { vm.goScreen(Screen.List) }
                             Scaffold(
                                 containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
                                 bottomBar = {
                                     NavigationBar(
                                         containerColor = wblCardColor(),
@@ -163,6 +166,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                         NavItem(screen, Screen.Calendar, Icons.Outlined.CalendarMonth, "日历") {
                                             vm.goScreen(Screen.Calendar)
+                                        }
+                                        NavItem(screen, Screen.Theme, Icons.Outlined.Palette, "主题") {
+                                            vm.goScreen(Screen.Theme)
                                         }
                                         NavItem(screen, Screen.Settings, Icons.Outlined.Settings, "设置") {
                                             vm.goScreen(Screen.Settings)
@@ -179,6 +185,7 @@ class MainActivity : ComponentActivity() {
                                     when (screen) {
                                         Screen.List -> TaskListScreen(vm, ui)
                                         Screen.Calendar -> CalendarScreen(vm, ui)
+                                        Screen.Theme -> ThemeScreen(vm)
                                         Screen.Settings -> SettingsScreen(vm)
                                         else -> {}
                                     }

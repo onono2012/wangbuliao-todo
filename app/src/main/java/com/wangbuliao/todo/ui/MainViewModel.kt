@@ -24,6 +24,7 @@ sealed interface Screen {
     object Edit : Screen
     object Settings : Screen
     object Calendar : Screen
+    object Theme : Screen
 }
 
 /** 编辑页草稿（单一数据源，避免本地状态同步问题） */

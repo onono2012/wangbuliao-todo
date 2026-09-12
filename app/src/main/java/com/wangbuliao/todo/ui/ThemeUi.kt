@@ -57,7 +57,64 @@ fun wblTopBarThemed(): Boolean {
     return spec.bgRes != null || spec.photoPath != null || spec.gradient != null
 }
 
-/** 顶栏背景 Modifier：照片=深色渐变遮罩；渐变主题=主题渐变；其余=默认 */
+/** 颜色相对亮度（WCAG 0..1） */
+private fun Color.relLum(): Float {
+    // 注意：Compose Color 分量已是 0..1，切勿再除 255
+    fun ch(c: Float): Float =
+        if (c <= 0.03928f) c / 12.92f
+        else Math.pow(((c + 0.055) / 1.055).toDouble(), 2.4).toFloat()
+    return 0.2126f * ch(red) + 0.7152f * ch(green) + 0.0722f * ch(blue)
+}
+
+private fun contrastRatio(l1: Float, l2: Float): Float {
+    val hi = maxOf(l1, l2); val lo = minOf(l1, l2)
+    return (hi + 0.05f) / (lo + 0.05f)
+}
+
+/**
+ * 顶栏内容色（标题/副标题/图标）：
+ * - 照片主题 → 白色（深色遮罩保证可读）
+ * - 渐变主题 → 对整条渐变计算「最差对比度」，白字/近黑字取更可读者
+ *   （修复：极光青/樱花粉/暖阳橙/暮山紫/鎏金等亮渐变上白字看不清）
+ * - 其余 → onSurface
+ */
+@Composable
+fun wblTopBarContentColor(): Color {
+    val spec = LocalWblTheme.current
+    if (spec.bgRes != null || spec.photoPath != null) return Color.White
+    val g = spec.gradient ?: return MaterialTheme.colorScheme.onSurface
+    val lums = g.map { it.relLum() }
+    val whiteWorst = lums.minOf { contrastRatio(1f, it) }
+    val blackLum = Color(0xFF1B1B1F).relLum()
+    val blackWorst = lums.minOf { contrastRatio(it, blackLum) }
+    return if (blackWorst > whiteWorst) Color(0xFF1B1B1F) else Color.White
+}
+
+/**
+ * 渐变顶栏对比度补偿 veil：中亮度渐变（黑/白字都到不了 WCAG 4.5）时，
+ * 叠一层极淡白纱（黑字主题）/黑纱（白字主题），把最差对比度顶到 4.5，上限 35%。
+ */
+@Composable
+fun wblTopBarVeil(): Pair<Color, Float> {
+    val spec = LocalWblTheme.current
+    if (spec.bgRes != null || spec.photoPath != null) return Color.Black to 0f
+    val g = spec.gradient ?: return Color.Black to 0f
+    val lums = g.map { it.relLum() }
+    val whiteWorst = lums.minOf { contrastRatio(1f, it) }
+    val blackLum = Color(0xFF1B1B1F).relLum()
+    val blackWorst = lums.minOf { contrastRatio(it, blackLum) }
+    return if (blackWorst > whiteWorst) {
+        // 黑字：最差在最暗色标 → 白纱提亮，需 L >= 0.229
+        val lmin = lums.min()
+        Color.White to minOf(0.35f, maxOf(0f, (0.229f - lmin) / (1f - lmin)))
+    } else {
+        // 白字：最差在最亮色标 → 黑纱压暗，需 L <= 0.183
+        val lmax = lums.max()
+        Color.Black to minOf(0.35f, maxOf(0f, 1f - 0.183f / lmax))
+    }
+}
+
+/** 顶栏背景 Modifier：照片=深色遮罩；渐变=主题渐变+对比度补偿 veil；其余=默认 */
 @Composable
 fun wblTopBarModifier(): Modifier {
     val spec = LocalWblTheme.current
@@ -71,7 +128,15 @@ fun wblTopBarModifier(): Modifier {
                 )
             )
         )
-        spec.gradient != null -> Modifier.background(Brush.horizontalGradient(spec.gradient))
+        spec.gradient != null -> run {
+            val veil = wblTopBarVeil()
+            Modifier.background(Brush.horizontalGradient(spec.gradient))
+                .then(
+                    if (veil.second > 0.001f) {
+                        Modifier.background(veil.first.copy(alpha = veil.second))
+                    } else Modifier
+                )
+        }
         else -> Modifier
     }
 }
@@ -204,7 +269,7 @@ private fun decodePhotoBg(path: String): android.graphics.Bitmap? {
 fun wblCardColor(): Color {
     val spec = LocalWblTheme.current
     val photo = spec.bgRes != null || spec.photoPath != null
-    return MaterialTheme.colorScheme.surface.copy(alpha = if (photo) 0.88f else 0.82f)
+    return MaterialTheme.colorScheme.surface.copy(alpha = if (photo) 0.92f else 0.86f)
 }
 
 /** 预设分类图标（自定义分类按默认标签图标） */

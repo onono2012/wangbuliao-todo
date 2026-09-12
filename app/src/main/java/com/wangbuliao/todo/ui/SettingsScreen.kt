@@ -100,7 +100,6 @@ fun SettingsScreen(vm: MainViewModel) {
     // 悬浮窗开关：需系统「显示在其他应用上层」授权，返回后核对真实状态
     val floatEnabled by Prefs.floatEnabled.collectAsState()
     val pinEnabled by Prefs.pinNotif.collectAsState()
-    val themeId by Prefs.theme.collectAsState()
     var ringName by remember { mutableStateOf(ringDisplayName(ctx)) }
 
     val overlaySettings = rememberLauncherForActivityResult(
@@ -136,40 +135,20 @@ fun SettingsScreen(vm: MainViewModel) {
         }
     }
 
-    // 自定义照片主题：选图 → 裁剪存库 → 提取主色 → 自动启用
-    var importingPhoto by remember { mutableStateOf(false) }
-    var importMsg by remember { mutableStateOf<String?>(null) }
     // 电池优化白名单：跳系统页，返回后刷新状态
     var optRefresh by remember { mutableStateOf(0) }
     val batteryOptLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { optRefresh++ }
 
-    val photoPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        importingPhoto = true
-        importMsg = null
-        CoroutineScope(Dispatchers.Main).launch {
-            val r = withContext(Dispatchers.IO) { CustomThemeStore.import(ctx, uri) }
-            importingPhoto = false
-            if (r != null) {
-                Prefs.setCustomPhoto(r.first, r.second)
-                Prefs.setTheme(CUSTOM_THEME_ID)
-                importMsg = "已启用「我的照片」主题"
-            } else {
-                importMsg = "照片导入失败，换一张试试"
-            }
-        }
-    }
-
     WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             val themed = wblTopBarThemed()
-            val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
+            val tbc = wblTopBarContentColor()
+            val tint = tbc
             TopAppBar(
                 title = { Text("设置", color = tint) },
                 navigationIcon = {
@@ -180,8 +159,8 @@ fun SettingsScreen(vm: MainViewModel) {
                 colors = if (themed) {
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
-                        titleContentColor = Color.White,
-                        navigationIconContentColor = Color.White
+                        titleContentColor = tbc,
+                        navigationIconContentColor = tbc
                     )
                 } else {
                     TopAppBarDefaults.topAppBarColors()
@@ -196,149 +175,6 @@ fun SettingsScreen(vm: MainViewModel) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── 主题外观 ──
-            SectionTitle("主题外观", Icons.Outlined.Palette)
-            Card(
-                Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
-            ) {
-                Column(Modifier.padding(14.dp)) {
-                    Text(
-                        "十套精心配色 + 自定义照片主题，全屏背景，浅色/深色自动适配",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    allThemes().forEach { spec ->
-                        val selected = themeId == spec.id
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { Prefs.setTheme(spec.id) }
-                                .padding(vertical = 6.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // 预览：drawable 照片 / 自定义照片文件 / 渐变色点
-                            val photoBmp = remember(spec.photoPath) {
-                                spec.photoPath?.let { CustomThemeStore.squareThumb(it, 96) }
-                            }
-                            Box(
-                                Modifier.size(34.dp)
-                                    .clip(CircleShape)
-                                    .then(
-                                        if (spec.previewRes == null && photoBmp == null) {
-                                            Modifier.background(
-                                                if (spec.preview.size >= 2) {
-                                                    Brush.linearGradient(spec.preview)
-                                                } else {
-                                                    Brush.linearGradient(
-                                                        listOf(spec.preview[0], spec.preview[0])
-                                                    )
-                                                }
-                                            )
-                                        } else Modifier
-                                    )
-                                    .then(
-                                        if (selected) {
-                                            Modifier.border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.onSurface,
-                                                CircleShape
-                                            )
-                                        } else Modifier
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (spec.previewRes != null) {
-                                    Image(
-                                        painterResource(spec.previewRes), null,
-                                        Modifier.matchParentSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                                photoBmp?.let { bmp ->
-                                    Image(
-                                        bmp.asImageBitmap(), null,
-                                        Modifier.matchParentSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                                if (selected) {
-                                    Icon(
-                                        Icons.Filled.Check, null,
-                                        Modifier.size(18.dp), tint = Color.White
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(spec.name, style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
-                                Text(
-                                    spec.desc,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            if (selected) {
-                                Text("使用中", style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    // ── 自定义照片主题：上传/更换/移除 ──
-                    val customPhoto by Prefs.customPhoto.collectAsState()
-                    OutlinedButton(
-                        onClick = {
-                            photoPicker.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                                )
-                            )
-                        },
-                        enabled = !importingPhoto,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (importingPhoto) {
-                            LinearProgressIndicator(Modifier.width(60.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("导入裁剪中…")
-                        } else {
-                            Text(
-                                if (customPhoto.isNullOrEmpty()) "📤 上传照片，做专属全屏主题"
-                                else "📤 更换自定义照片"
-                            )
-                        }
-                    }
-                    importMsg?.let {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    if (!customPhoto.isNullOrEmpty()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "照片全屏显示，悬浮球也会变成你的照片；主色自动从照片提取",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(onClick = {
-                                val f = File(customPhoto!!)
-                                if (f.exists()) f.delete()
-                                Prefs.setCustomPhoto(null)
-                                if (themeId == CUSTOM_THEME_ID) Prefs.setTheme("rainbow")
-                            }) {
-                                Text("移除", color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                }
-            }
-
             // ── 随手记悬浮窗 ──
             SectionTitle("随手记悬浮窗", Icons.Outlined.PictureInPictureAlt)
             Card(

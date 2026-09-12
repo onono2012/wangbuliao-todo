@@ -80,9 +80,11 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
     WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             // 主题化顶栏：照片主题=深色遮罩，渐变主题=主题渐变，其余=默认纯色
             val themed = wblTopBarThemed()
+            val tbc = wblTopBarContentColor()
             TopAppBar(
                 title = {
                     // 标题 + 今日农历/节气副标题（每天自动更新）
@@ -110,18 +112,18 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     Column {
                         Text(
                             "忘不了",
-                            color = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
+                            color = tbc
                         )
                         Text(
                             sub,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (themed) Color.White.copy(alpha = 0.85f)
+                            color = if (themed) tbc
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 actions = {
-                    val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    val tint = if (themed) tbc else MaterialTheme.colorScheme.onSurfaceVariant
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(Icons.Filled.Search, contentDescription = "搜索", tint = tint)
                     }
@@ -133,8 +135,8 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                 colors = if (themed) {
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
-                        titleContentColor = Color.White,
-                        actionIconContentColor = Color.White
+                        titleContentColor = tbc,
+                        actionIconContentColor = tbc
                     )
                 } else {
                     TopAppBarDefaults.topAppBarColors()

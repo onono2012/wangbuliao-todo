@@ -237,9 +237,11 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
     WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             val themed = wblTopBarThemed()
-            val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
+            val tbc = wblTopBarContentColor()
+            val tint = tbc
             TopAppBar(
                 title = {
                     Text(if (isNew) "记一笔" else "编辑事项", color = tint)
@@ -256,7 +258,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(
                                 Icons.Outlined.Delete, "删除",
-                                tint = if (themed) Color.White
+                                tint = if (themed) tbc
                                 else MaterialTheme.colorScheme.error
                             )
                         }
@@ -265,9 +267,9 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 colors = if (themed) {
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
-                        titleContentColor = Color.White,
-                        navigationIconContentColor = Color.White,
-                        actionIconContentColor = Color.White
+                        titleContentColor = tbc,
+                        navigationIconContentColor = tbc,
+                        actionIconContentColor = tbc
                     )
                 } else {
                     TopAppBarDefaults.topAppBarColors()
