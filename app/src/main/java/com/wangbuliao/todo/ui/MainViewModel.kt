@@ -23,6 +23,7 @@ sealed interface Screen {
     object List : Screen
     object Edit : Screen
     object Settings : Screen
+    object Calendar : Screen
 }
 
 /** 编辑页草稿（单一数据源，避免本地状态同步问题） */
@@ -172,6 +173,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _screen.value = Screen.Settings
     }
 
+    fun openCalendar() {
+        _screen.value = Screen.Calendar
+    }
+
+    fun goScreen(sc: Screen) {
+        _screen.value = sc
+    }
+
+    /** 日历页选中某天「新增事项」：预填提醒时间为当天 09:00 */
+    fun openNewForDate(dayStartMillis: Long) {
+        val cal = java.util.Calendar.getInstance().apply {
+            timeInMillis = dayStartMillis
+            set(java.util.Calendar.HOUR_OF_DAY, 9)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        _draft.value = EditDraft(
+            category = _ui.value.categories.firstOrNull() ?: Task.DEFAULT_CATEGORY,
+            remindAt = cal.timeInMillis
+        )
+        draftOriginal = _draft.value
+        _screen.value = Screen.Edit
+    }
+
     fun backList() {
         _screen.value = Screen.List
     }
@@ -232,6 +258,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 TaskRepo.quickNote(t)
                 refresh()
                 PinNotifService.refresh(ctx)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
                 _msg.value = "已记入「随手记」✍"
             } catch (e: Exception) {
                 _msg.value = "保存失败：${e.message}"
@@ -277,6 +304,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 refresh()
                 PinNotifService.refresh(ctx)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
                 _screen.value = Screen.List
                 _msg.value = if (d.id > 0) "已保存" else "已添加"
             } catch (e: Exception) {
@@ -296,8 +324,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     AlarmScheduler.schedule(ctx, nt)
                 }
+                // 震动反馈（受设置-震动开关控制）+ 明确提示去向
+                if (nd) {
+                    com.wangbuliao.todo.util.Haptics.taskDone(ctx)
+                    _msg.value = "已完成「${t.title.ifEmpty { "未命名" }}」✓ 移入已办"
+                } else {
+                    com.wangbuliao.todo.util.Haptics.taskUndone(ctx)
+                    _msg.value = "已移回待办"
+                }
                 refresh()
                 PinNotifService.refresh(ctx)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
             } catch (e: Exception) {
                 _msg.value = "操作失败：${e.message}"
             }
@@ -338,6 +375,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 AlarmScheduler.cancel(ctx, t)
                 refresh()
                 PinNotifService.refresh(ctx)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
                 _msg.value = "已删除"
             } catch (e: Exception) {
                 _msg.value = "删除失败：${e.message}"
@@ -365,6 +403,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 AlarmScheduler.cancel(ctx, Task(id = d.id))
                 refresh()
                 PinNotifService.refresh(ctx)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
                 _screen.value = Screen.List
                 _msg.value = "已删除"
             } catch (e: Exception) {

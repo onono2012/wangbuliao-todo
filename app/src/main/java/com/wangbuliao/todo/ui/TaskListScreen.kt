@@ -85,10 +85,40 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
             val themed = wblTopBarThemed()
             TopAppBar(
                 title = {
-                    Text(
-                        "忘不了",
-                        color = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
-                    )
+                    // 标题 + 今日农历/节气副标题（每天自动更新）
+                    val now = remember { java.util.Calendar.getInstance() }
+                    val y = now.get(java.util.Calendar.YEAR)
+                    val m = now.get(java.util.Calendar.MONTH) + 1
+                    val d = now.get(java.util.Calendar.DAY_OF_MONTH)
+                    val sub = remember(y, m, d) {
+                        val ld = com.wangbuliao.todo.util.LunarUtil.solar2lunar(y, m, d)
+                        val term = com.wangbuliao.todo.util.LunarUtil.termNameOn(y, m, d)
+                        buildString {
+                            append("$m 月 $d 日 · ")
+                            append(com.wangbuliao.todo.util.LunarUtil.weekName(y, m, d))
+                            if (ld != null) {
+                                append(" · 农历")
+                                append(
+                                    if (term != null) term
+                                    else if (ld.isChuxi) "除夕"
+                                    else if (ld.isSpringFestival) "春节(正月初一)"
+                                    else ld.monthName + ld.dayName
+                                )
+                            }
+                        }
+                    }
+                    Column {
+                        Text(
+                            "忘不了",
+                            color = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            sub,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (themed) Color.White.copy(alpha = 0.85f)
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 actions = {
                     val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -98,9 +128,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     IconButton(onClick = { showQuickNote = true }) {
                         Icon(Icons.Filled.Edit, contentDescription = "随手记", tint = tint)
                     }
-                    IconButton(onClick = { vm.openSettings() }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "设置", tint = tint)
-                    }
+                    // 设置入口已移至底部导航栏
                 },
                 colors = if (themed) {
                     TopAppBarDefaults.topAppBarColors(

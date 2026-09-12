@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Palette
@@ -49,6 +51,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -61,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -74,8 +78,13 @@ import com.wangbuliao.todo.floatwin.FloatingNoteService
 import com.wangbuliao.todo.reminder.AlarmScheduler
 import com.wangbuliao.todo.reminder.Notif
 import com.wangbuliao.todo.reminder.PinNotifService
+import com.wangbuliao.todo.reminder.KeepAliveService
 import com.wangbuliao.todo.update.Updater
 import com.wangbuliao.todo.util.Prefs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -127,6 +136,34 @@ fun SettingsScreen(vm: MainViewModel) {
         }
     }
 
+    // 自定义照片主题：选图 → 裁剪存库 → 提取主色 → 自动启用
+    var importingPhoto by remember { mutableStateOf(false) }
+    var importMsg by remember { mutableStateOf<String?>(null) }
+    // 电池优化白名单：跳系统页，返回后刷新状态
+    var optRefresh by remember { mutableStateOf(0) }
+    val batteryOptLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { optRefresh++ }
+
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        importingPhoto = true
+        importMsg = null
+        CoroutineScope(Dispatchers.Main).launch {
+            val r = withContext(Dispatchers.IO) { CustomThemeStore.import(ctx, uri) }
+            importingPhoto = false
+            if (r != null) {
+                Prefs.setCustomPhoto(r.first, r.second)
+                Prefs.setTheme(CUSTOM_THEME_ID)
+                importMsg = "已启用「我的照片」主题"
+            } else {
+                importMsg = "照片导入失败，换一张试试"
+            }
+        }
+    }
+
     WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
@@ -167,12 +204,12 @@ fun SettingsScreen(vm: MainViewModel) {
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Text(
-                        "七套精心配色，含浅色/深色自动适配",
+                        "十套精心配色 + 自定义照片主题，全屏背景，浅色/深色自动适配",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(10.dp))
-                    WBL_THEMES.forEach { spec ->
+                    allThemes().forEach { spec ->
                         val selected = themeId == spec.id
                         Row(
                             Modifier.fillMaxWidth()
@@ -181,12 +218,15 @@ fun SettingsScreen(vm: MainViewModel) {
                                 .padding(vertical = 6.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // 预览：照片主题=圆形照片，其他=渐变色点
+                            // 预览：drawable 照片 / 自定义照片文件 / 渐变色点
+                            val photoBmp = remember(spec.photoPath) {
+                                spec.photoPath?.let { CustomThemeStore.squareThumb(it, 96) }
+                            }
                             Box(
                                 Modifier.size(34.dp)
                                     .clip(CircleShape)
                                     .then(
-                                        if (spec.previewRes == null) {
+                                        if (spec.previewRes == null && photoBmp == null) {
                                             Modifier.background(
                                                 if (spec.preview.size >= 2) {
                                                     Brush.linearGradient(spec.preview)
@@ -216,6 +256,13 @@ fun SettingsScreen(vm: MainViewModel) {
                                         contentScale = ContentScale.Crop
                                     )
                                 }
+                                photoBmp?.let { bmp ->
+                                    Image(
+                                        bmp.asImageBitmap(), null,
+                                        Modifier.matchParentSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 if (selected) {
                                     Icon(
                                         Icons.Filled.Check, null,
@@ -236,6 +283,56 @@ fun SettingsScreen(vm: MainViewModel) {
                             if (selected) {
                                 Text("使用中", style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    // ── 自定义照片主题：上传/更换/移除 ──
+                    val customPhoto by Prefs.customPhoto.collectAsState()
+                    OutlinedButton(
+                        onClick = {
+                            photoPicker.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        },
+                        enabled = !importingPhoto,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (importingPhoto) {
+                            LinearProgressIndicator(Modifier.width(60.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("导入裁剪中…")
+                        } else {
+                            Text(
+                                if (customPhoto.isNullOrEmpty()) "📤 上传照片，做专属全屏主题"
+                                else "📤 更换自定义照片"
+                            )
+                        }
+                    }
+                    importMsg?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    if (!customPhoto.isNullOrEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "照片全屏显示，悬浮球也会变成你的照片；主色自动从照片提取",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = {
+                                val f = File(customPhoto!!)
+                                if (f.exists()) f.delete()
+                                Prefs.setCustomPhoto(null)
+                                if (themeId == CUSTOM_THEME_ID) Prefs.setTheme("rainbow")
+                            }) {
+                                Text("移除", color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -318,6 +415,81 @@ fun SettingsScreen(vm: MainViewModel) {
                 }
             }
 
+            // ── 后台保活 ──
+            SectionTitle("后台保活", Icons.Outlined.Shield)
+            val keepAlive by Prefs.keepAlive.collectAsState()
+            val pm = ctx.getSystemService(android.content.Context.POWER_SERVICE)
+                as android.os.PowerManager
+            val ignoring = remember(optRefresh) {
+                pm.isIgnoringBatteryOptimizations(ctx.packageName)
+            }
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("保活守护服务")
+                            Text(
+                                if (keepAlive) "运行中：前台服务常驻，最大限度防止被系统杀后台"
+                                else "开启后应用常驻后台，提醒不漏发",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "状态通知会显示未完成事项清单，点「打开管理器」直达本页",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = keepAlive,
+                            onCheckedChange = { on ->
+                                Prefs.setKeepAlive(on)
+                                if (on) KeepAliveService.start(ctx) else KeepAliveService.stop(ctx)
+                            }
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("电池优化白名单")
+                            Text(
+                                if (ignoring) "✓ 已忽略电池优化（保活效果最佳）"
+                                else "未加白名单：系统省电时可能杀掉后台",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (ignoring) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.error
+                            )
+                        }
+                        if (!ignoring) {
+                            OutlinedButton(onClick = {
+                                try {
+                                    batteryOptLauncher.launch(
+                                        Intent(
+                                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                            Uri.parse("package:${ctx.packageName}")
+                                        )
+                                    )
+                                } catch (e: Exception) {
+                                    try {
+                                        batteryOptLauncher.launch(
+                                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                        )
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            }) { Text("去允许") }
+                        }
+                    }
+                    Text(
+                        "小贴士：realme/OPPO 请在系统「设置 → 电池 → 应用耗电管理」中允许本应用后台运行与自启动，保活更稳",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             // ── 提醒铃声 ──
             SectionTitle("提醒铃声", Icons.Outlined.MusicNote)
             Card(
@@ -359,6 +531,29 @@ fun SettingsScreen(vm: MainViewModel) {
                         }
                         ringPicker.launch(i)
                     }) { Text("更换") }
+                }
+                // 震动总开关：通知震动 + 应用内完成待办触感
+                val vibOn by Prefs.vibrate.collectAsState()
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("震动提醒")
+                        Text(
+                            if (vibOn) "到期通知震动（长-短-长）+ 完成待办轻震反馈"
+                            else "已关闭全部震动",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = vibOn,
+                        onCheckedChange = { on ->
+                            Prefs.setVibrate(on)
+                            Notif.ensureChannels(ctx)  // 渠道 id 含震动标志，重建生效
+                        }
+                    )
                 }
             }
 

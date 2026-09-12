@@ -1,6 +1,9 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.wangbuliao.todo
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,21 +16,37 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,13 +59,16 @@ import com.wangbuliao.todo.floatwin.FloatingNoteService
 import com.wangbuliao.todo.reminder.AlarmScheduler
 import com.wangbuliao.todo.reminder.Notif
 import com.wangbuliao.todo.reminder.PinNotifService
+import com.wangbuliao.todo.reminder.KeepAliveService
 import com.wangbuliao.todo.util.Prefs
+import com.wangbuliao.todo.ui.CalendarScreen
 import com.wangbuliao.todo.ui.EditTaskScreen
 import com.wangbuliao.todo.ui.MainViewModel
 import com.wangbuliao.todo.ui.Screen
 import com.wangbuliao.todo.ui.SettingsScreen
 import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
+import com.wangbuliao.todo.ui.wblCardColor
 import com.wangbuliao.todo.update.Updater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +78,16 @@ class MainActivity : ComponentActivity() {
 
     private val notifPermLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /** onNewIntent 深链信号：保活通知「打开管理器」 */
+    private var goSettingsSignal by mutableStateOf(false)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(KeepAliveService.EXTRA_OPEN_SETTINGS, false)) {
+            goSettingsSignal = true
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +118,19 @@ class MainActivity : ComponentActivity() {
                 val msg by vm.msg.collectAsState()
                 val snackbar = remember { SnackbarHostState() }
 
+                // 保活通知「打开管理器」深链 → 直达设置页（冷启动 + onNewIntent 热启动）
+                LaunchedEffect(Unit) {
+                    if (intent?.getBooleanExtra(KeepAliveService.EXTRA_OPEN_SETTINGS, false) == true) {
+                        vm.goScreen(Screen.Settings)
+                    }
+                }
+                LaunchedEffect(goSettingsSignal) {
+                    if (goSettingsSignal) {
+                        vm.goScreen(Screen.Settings)
+                        goSettingsSignal = false
+                    }
+                }
+
                 // 启动即静检查 GitHub 更新（有新版本→强制更新对话框）
                 LaunchedEffect(Unit) {
                     vm.refresh()
@@ -100,13 +145,45 @@ class MainActivity : ComponentActivity() {
 
                 Box(Modifier.fillMaxSize()) {
                     when (screen) {
-                        Screen.List -> TaskListScreen(vm, ui)
-                        Screen.Edit -> {
-                            EditTaskScreen(vm, draft, ui)
-                        }
-                        Screen.Settings -> {
-                            BackHandler { vm.backList() }
-                            SettingsScreen(vm)
+                        // 编辑页全屏（无底部导航，专注输入）
+                        Screen.Edit -> EditTaskScreen(vm, draft, ui)
+                        // 其余页面：底部导航（待办 / 日历 / 设置）
+                        else -> {
+                            BackHandler(screen != Screen.List) { vm.goScreen(Screen.List) }
+                            Scaffold(
+                                containerColor = Color.Transparent,
+                                bottomBar = {
+                                    NavigationBar(
+                                        containerColor = wblCardColor(),
+                                        tonalElevation = 0.dp,
+                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                    ) {
+                                        NavItem(screen, Screen.List, Icons.Outlined.Checklist, "待办") {
+                                            vm.goScreen(Screen.List)
+                                        }
+                                        NavItem(screen, Screen.Calendar, Icons.Outlined.CalendarMonth, "日历") {
+                                            vm.goScreen(Screen.Calendar)
+                                        }
+                                        NavItem(screen, Screen.Settings, Icons.Outlined.Settings, "设置") {
+                                            vm.goScreen(Screen.Settings)
+                                        }
+                                    }
+                                }
+                            ) { pad ->
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(pad)
+                                        .consumeWindowInsets(pad)
+                                ) {
+                                    when (screen) {
+                                        Screen.List -> TaskListScreen(vm, ui)
+                                        Screen.Calendar -> CalendarScreen(vm, ui)
+                                        Screen.Settings -> SettingsScreen(vm)
+                                        else -> {}
+                                    }
+                                }
+                            }
                         }
                     }
                     SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
@@ -142,10 +219,45 @@ class MainActivity : ComponentActivity() {
             }
             if (Prefs.pinNotif.value) PinNotifService.start(ctx)
             else PinNotifService.stop(ctx)
+            if (Prefs.keepAlive.value) KeepAliveService.start(ctx)
+            else KeepAliveService.stop(ctx)
         } catch (e: Exception) {
             android.util.Log.e("WblMain", "syncServices failed", e)
         }
     }
+}
+
+@Composable
+private fun RowScope.NavItem(
+    current: Screen,
+    target: Screen,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    val selected = current == target
+    NavigationBarItem(
+        selected = selected,
+        onClick = onClick,
+        icon = {
+            Icon(
+                icon, contentDescription = label,
+                tint = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        label = {
+            Text(
+                label,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        colors = NavigationBarItemDefaults.colors(
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        )
+    )
 }
 
 /**

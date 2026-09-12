@@ -47,6 +47,14 @@ object Prefs {
         _pinNotif.value = b
     }
 
+    // ── 后台保活 ──
+    private val _keepAlive = MutableStateFlow(false)
+    val keepAlive: StateFlow<Boolean> = _keepAlive
+    fun setKeepAlive(b: Boolean) {
+        sp.edit().putBoolean("keep_alive", b).apply()
+        _keepAlive.value = b
+    }
+
     // ── 提醒铃声 ──
     private val _ringUri = MutableStateFlow<String?>(null)
     val ringUri: StateFlow<String?> = _ringUri
@@ -63,11 +71,41 @@ object Prefs {
         _ringUri.value = uri
     }
 
+    // ── 自定义照片主题 ──
+    private val _customPhoto = MutableStateFlow<String?>(null)
+    val customPhoto: StateFlow<String?> = _customPhoto
+
+    /** 从照片提取的主色（ARGB int），自定义主题的 primary */
+    private val _customPrimary = MutableStateFlow(0xFF7C4DFF.toInt())
+    val customPrimary: StateFlow<Int> = _customPrimary
+
+    fun setCustomPhoto(path: String?, primary: Int = 0xFF7C4DFF.toInt()) {
+        sp.edit()
+            .putString("custom_photo", path)
+            .putInt("custom_primary", primary)
+            .apply()
+        _customPhoto.value = path
+        _customPrimary.value = primary
+    }
+
+    // ── 震动 ──
+    /** 震动总开关：提醒通知震动 + 应用内完成待办的触感反馈 */
+    private val _vibrate = MutableStateFlow(true)
+    val vibrate: StateFlow<Boolean> = _vibrate
+    fun setVibrate(b: Boolean) {
+        sp.edit().putBoolean("vibrate", b).apply()
+        _vibrate.value = b
+    }
+
     /** 在 WblApp.onCreate 中调用（AppCtx 就绪后） */
     fun init() {
         _theme.value = sp.getString("theme_id", "rainbow") ?: "rainbow"
         _floatEnabled.value = sp.getBoolean("float_enabled", false)
         _pinNotif.value = sp.getBoolean("pin_notif", false)
+        _keepAlive.value = sp.getBoolean("keep_alive", false)
         _ringUri.value = sp.getString("ring_uri", null)
+        _customPhoto.value = sp.getString("custom_photo", null)
+        _customPrimary.value = sp.getInt("custom_primary", 0xFF7C4DFF.toInt())
+        _vibrate.value = sp.getBoolean("vibrate", true)
     }
 }

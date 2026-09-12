@@ -1,0 +1,164 @@
+    )
+
+    val TERM_NAMES = arrayOf(
+        "小寒", "大寒", "立春", "雨水", "惊蛰", "春分", "清明", "谷雨",
+        "立夏", "小满", "芒种", "夏至", "小暑", "大暑", "立秋", "处暑",
+        "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪", "冬至"
+    )
+
+    private val MONTH_NAMES = arrayOf("正", "二", "三", "四", "五", "六", "七", "八", "九", "十", "冬", "腊")
+    private val DAY_NAMES = arrayOf(
+        "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
+        "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
+        "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十"
+    )
+    private val WEEK_NAMES = arrayOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
+    private val STEMS = arrayOf("甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸")
+    private val BRANCHES = arrayOf("子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥")
+    private val ZODIAC = arrayOf("鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪")
+
+    /** 1900-01-31 = 农历 1900 年正月初一 */
+    private val BASE_EPOCH_DAY = LocalDate.of(1900, 1, 31).toEpochDay()
+
+    data class LunarDate(
+        val lunarYear: Int,
+        val lunarMonth: Int,   // 1..12
+        val lunarDay: Int,     // 1..30
+        val isLeap: Boolean
+    ) {
+        val monthName: String get() = (if (isLeap) "闰" else "") + MONTH_NAMES[lunarMonth - 1] + "月"
+        val dayName: String get() = DAY_NAMES[lunarDay - 1]
+        val isChuxi: Boolean get() = !isLeap && lunarMonth == 12 && lunarDay == monthDaysOf(lunarYear, 12)
+        val isSpringFestival: Boolean get() = !isLeap && lunarMonth == 1 && lunarDay == 1
+        /** 如 "二〇二六年二月十八" */
+        val fullText: String get() = lunarYearCn(lunarYear) + "年" + monthName + dayName
+        /** 干支 + 生肖，如 "丙午马年" */
+        val ganZhiText: String get() = ganZhiYear(lunarYear) + zodiacOf(lunarYear) + "年"
+    }
+
+    // ── 表访问 ──
+
+    private fun leapMonth(y: Int) = LUNAR_INFO[y - 1900] and 0xF
+    private fun leapDaysOf(y: Int): Int {
+        val lm = leapMonth(y)
+        return if (lm != 0) (if ((LUNAR_INFO[y - 1900] and 0x10000) != 0) 30 else 29) else 0
+    }
+    private fun monthDaysOf(y: Int, m: Int) = if ((LUNAR_INFO[y - 1900] and (0x10000 shr m)) != 0) 30 else 29
+    private fun lYearDays(y: Int): Int {
+        var s = 348
+        var i = 0x8000
+        while (i > 0x8) {
+            if ((LUNAR_INFO[y - 1900] and i) != 0) s++
+            i = i shr 1
+        }
+        return s + leapDaysOf(y)
+    }
+
+    /** 公历 → 农历；超出 1900-01-31..2100-12-31 范围返回 null */
+    fun solar2lunar(y: Int, m: Int, d: Int): LunarDate? {
+        if (y < 1900 || y > 2100) return null
+        var offset = LocalDate.of(y, m, d).toEpochDay() - BASE_EPOCH_DAY
+        if (offset < 0) return null
+        var temp = 0
+        var i = 1900
+        while (i < 2101 && offset > 0) {
+            temp = lYearDays(i)
+            offset -= temp
+            i++
+        }
+        if (offset < 0) {
+            offset += temp
+            i--
+        }
+        if (i > 2100) return null
+        val year = i
+        val leap = leapMonth(i)
+        var isLeap = false
+        i = 1
+        while (i < 13 && offset > 0) {
+            temp = if (leap > 0 && i == leap + 1 && !isLeap) {
+                i--
+                isLeap = true
+                leapDaysOf(year)
+            } else {
+                monthDaysOf(year, i)
+            }
+            if (isLeap && i == leap + 1) isLeap = false
+            offset -= temp
+            i++
+        }
+        if (offset == 0 && leap > 0 && i == leap + 1) {
+            if (isLeap) isLeap = false
+            else {
+                isLeap = true
+                i--
+            }
+        }
+        if (offset < 0) {
+            offset += temp
+            i--
+        }
+        return LunarDate(year, i, offset + 1, isLeap)
+    }
+
+    // ── 节气 ──
+
+    /** 第 n 个节气（0=小寒 .. 23=冬至）在公历年 year 的日期（日）；超范围返回 -1 */
+    fun termDay(year: Int, n: Int): Int {
+        if (year < 1900 || year > 2100 || n < 0 || n > 23) return -1
+        val row = TERM_ROWS[year - 1900]
+        val b = n * 5
+        var v = 0
+        for (k in 0..4) {
+            val bitPos = b + k                    // 自 LSB 起的位号
+            val ch = row[29 - bitPos / 4]         // 最左字符 = 最高位
+            val nib = Character.digit(ch, 16)
+            val bit = (nib shr (bitPos % 4)) and 1
+            v = v or (bit shl k)
+        }
+        return v + 3
+    }
+
+    /** 某天是否是节气日；是则返回节气名（每月最多 2 个节气：节 + 中气） */
+    fun termNameOn(y: Int, m: Int, d: Int): String? {
+        val n1 = (m - 1) * 2
+        if (termDay(y, n1) == d) return TERM_NAMES[n1]
+        val n2 = n1 + 1
+        if (termDay(y, n2) == d) return TERM_NAMES[n2]
+        return null
+    }
+
+    // ── 展示文本 ──
+
+    /** 日历格第二行：节气 > 除夕/春节 > 农历月首 > 农历日 */
+    fun cellText(y: Int, m: Int, d: Int): String {
+        termNameOn(y, m, d)?.let { return it }
+        val ld = solar2lunar(y, m, d) ?: return ""
+        if (ld.isChuxi) return "除夕"
+        if (ld.isSpringFestival) return "春节"
+        return if (ld.lunarDay == 1) ld.monthName else ld.dayName
+    }
+
+    /** 日历格文本是否高亮（节气/除夕/春节/月首） */
+    fun cellHighlight(y: Int, m: Int, d: Int): Boolean {
+        if (termNameOn(y, m, d) != null) return true
+        val ld = solar2lunar(y, m, d) ?: return false
+        return ld.isChuxi || ld.isSpringFestival || ld.lunarDay == 1
+    }
+
+    fun weekName(y: Int, m: Int, d: Int): String =
+        WEEK_NAMES[LocalDate.of(y, m, d).dayOfWeek.value % 7]
+
+    fun ganZhiYear(lunarYear: Int): String {
+        val idx = ((lunarYear - 4) % 10 + 10) % 10
+        val idb = ((lunarYear - 4) % 12 + 12) % 12
+        return STEMS[idx] + BRANCHES[idb]
+    }
+
+    fun zodiacOf(lunarYear: Int): String = ZODIAC[((lunarYear - 4) % 12 + 12) % 12]
+
+    private fun lunarYearCn(y: Int): String {
+        val digits = "〇一二三四五六七八九"
+        return y.toString().map { digits[it - '0'] }.joinToString("")
+    }
+}

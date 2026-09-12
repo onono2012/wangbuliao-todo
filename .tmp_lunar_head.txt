@@ -1,0 +1,17 @@
+package com.wangbuliao.todo.util
+
+import java.time.LocalDate
+
+/**
+ * 农历 + 24 节气（1900-01-31 ~ 2100-12-31）。
+ *
+ * 数据表（天文真值，Python 侧已全量验证）：
+ * - LUNAR_INFO：农历月序表（17bit：4bit 闰月序 + 1bit 闰月大小 + 12bit 月大小），
+ *   与 zhdate CHINESEYEARCODE 同构，经 73019 天全量比对 0 错误。
+ * - TERM_ROWS：24 节气打包表，ephem 天文视太阳黄经真值（与官方万年历 100% 吻合），
+ *   每节气日 5bit（日 - 3，值域 3..24），LSB-first：节气 n 的日 = 3 + bits[n*5 ..< n*5+5)。
+ *   每年 30 个 hex 字符 = 120bit，最左字符为最高 4bit。
+ */
+object LunarUtil {
+
+    private val LUNAR_INFO = intArrayOf(

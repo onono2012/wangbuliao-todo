@@ -35,6 +35,10 @@ class BootReceiver : BroadcastReceiver() {
                 if (Prefs.pinNotif.value) {
                     PinNotifService.start(app)
                 }
+                // 后台保活
+                if (Prefs.keepAlive.value) {
+                    KeepAliveService.start(app)
+                }
             } catch (e: Exception) {
                 Log.e("WblBoot", "restore services failed", e)
             } finally {

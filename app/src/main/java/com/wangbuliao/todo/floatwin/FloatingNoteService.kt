@@ -54,6 +54,13 @@ class FloatingNoteService : Service() {
         Notif.ensureChannels(this)
         startForegroundCompat()
         addBubble()
+        // 主题切换即时跟随：悬浮球重新上色/换贴图
+        scope.launch {
+            com.wangbuliao.todo.util.Prefs.theme.collect {
+                bubbleView?.let { applyBubbleTheme(it) }
+                if (panelOpen) panelView?.let { applyPanelTheme(it) }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -109,7 +116,7 @@ class FloatingNoteService : Service() {
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = Gravity.TOP or Gravity.START
-                x = if (savedX >= 0) savedX else (resources.displayMetrics.widthPixels - dp(72))
+                x = if (savedX >= 0) savedX else (resources.displayMetrics.widthPixels - dp(56))
                 y = if (savedY >= 0) savedY else resources.displayMetrics.heightPixels / 3
             }
             attachDrag(v, p)
@@ -130,9 +137,16 @@ class FloatingNoteService : Service() {
             )
             val text = v.findViewById<TextView>(R.id.bubble_text)
             val photo = v.findViewById<ImageView>(R.id.bubble_photo)
-            if (spec.bubbleRes != null) {
-                val size = dp(54)
-                val src = android.graphics.BitmapFactory.decodeResource(resources, spec.bubbleRes)
+            val size = dp(40)
+            // 圆图来源：drawable 球面图 > 自定义照片文件 > 无（渐变球）
+            val src: android.graphics.Bitmap? = when {
+                spec.bubbleRes != null ->
+                    android.graphics.BitmapFactory.decodeResource(resources, spec.bubbleRes)
+                spec.photoPath != null ->
+                    com.wangbuliao.todo.media.ImageStore.thumb(spec.photoPath, size * 3)
+                else -> null
+            }
+            if (src != null) {
                 val scaled = android.graphics.Bitmap.createScaledBitmap(src, size, size, true)
                 val out = android.graphics.Bitmap.createBitmap(
                     size, size, android.graphics.Bitmap.Config.ARGB_8888
@@ -147,9 +161,10 @@ class FloatingNoteService : Service() {
                 canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
                 photo.setImageBitmap(out)
                 photo.visibility = View.VISIBLE
-                text.background = null
+                text.visibility = View.GONE
             } else {
                 photo.visibility = View.GONE
+                text.visibility = View.VISIBLE
                 text.background = themedOval(spec)
             }
         } catch (e: Exception) {
@@ -245,6 +260,8 @@ class FloatingNoteService : Service() {
         try {
             if (panelView == null) {
                 val v = LayoutInflater.from(this).inflate(R.layout.float_panel, null)
+                applyPanelTheme(v)
+                wireMediaButtons(v)
                 val p = WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.WRAP_CONTENT,
@@ -269,6 +286,8 @@ class FloatingNoteService : Service() {
                         try {
                             TaskRepo.quickNote(text)
                             PinNotifService.refresh(applicationContext)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
+                            com.wangbuliao.todo.util.Haptics.quickSaved(applicationContext)
                             launch(Dispatchers.Main) { toast("已记入「随手记」✍") }
                         } catch (e: Exception) {
                             launch(Dispatchers.Main) { toast("保存失败：${e.message}") }
@@ -293,6 +312,7 @@ class FloatingNoteService : Service() {
                 panelView = v
                 panelParams = p
             }
+            panelView?.let { applyPanelTheme(it) }
             panelView?.visibility = View.VISIBLE
             panelOpen = true
             bubbleView?.visibility = View.GONE
@@ -312,6 +332,78 @@ class FloatingNoteService : Service() {
             panelOpen = false
         } catch (e: Exception) {
             Log.e(TAG, "closePanel failed", e)
+        }
+    }
+
+    /** 面板主题化：深色玻璃底 + 当前主题主色按钮/描边（跟随主题切换） */
+    private fun applyPanelTheme(v: View) {
+        try {
+            val spec = com.wangbuliao.todo.ui.themeById(
+                com.wangbuliao.todo.util.Prefs.theme.value
+            )
+            val primary = if (spec.gradient != null) {
+                spec.gradient[0].toArgb()
+            } else {
+                spec.light.primary.toArgb()
+            }
+            val glass = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(20).toFloat()
+                setColor(0xF2161822.toInt())
+                setStroke(dp(1), (primary and 0x00FFFFFF) or 0x55000000)
+            }
+            v.findViewById<View>(R.id.panel_root).background = glass
+            val ghost = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(0x1AFFFFFF)
+                setStroke(dp(1), 0x33FFFFFF)
+            }
+            val solid = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(primary)
+            }
+            val field = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(0x14FFFFFF)
+                setStroke(dp(1), 0x22FFFFFF)
+            }
+            listOf(R.id.btn_open, R.id.btn_cam, R.id.btn_gallery, R.id.btn_record)
+                .forEach { v.findViewById<View>(it).background = ghost }
+            v.findViewById<View>(R.id.btn_save).background = solid
+            v.findViewById<View>(R.id.et_note).background = field
+            // 主色太暗时保存按钮文字改白（黑金等主题主色偏亮则用深字）
+            val lum = (android.graphics.Color.red(primary) * 299 +
+                android.graphics.Color.green(primary) * 587 +
+                android.graphics.Color.blue(primary) * 114) / 1000
+            v.findViewById<TextView>(R.id.btn_save)
+                .setTextColor(if (lum > 150) 0xFF101010.toInt() else 0xFFFFFFFF.toInt())
+        } catch (e: Exception) {
+            Log.e(TAG, "applyPanelTheme failed", e)
+        }
+    }
+
+    /** 媒体按钮：拍照 / 相册 / 录音 → FloatMediaActivity（透明页完成后直接入库） */
+    private fun wireMediaButtons(v: View) {
+        v.findViewById<View>(R.id.btn_cam).setOnClickListener {
+            launchMedia(FloatMediaActivity.ACTION_CAMERA)
+        }
+        v.findViewById<View>(R.id.btn_gallery).setOnClickListener {
+            launchMedia(FloatMediaActivity.ACTION_GALLERY)
+        }
+        v.findViewById<View>(R.id.btn_record).setOnClickListener {
+            launchMedia(FloatMediaActivity.ACTION_RECORD)
+        }
+    }
+
+    private fun launchMedia(action: String) {
+        try {
+            val i = Intent(this, FloatMediaActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(FloatMediaActivity.EXTRA_ACTION, action)
+            }
+            startActivity(i)
+            closePanel()
+        } catch (e: Exception) {
+            Log.e(TAG, "launchMedia failed", e)
         }
     }
 

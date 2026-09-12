@@ -30,6 +30,7 @@ class ReminderReceiver : BroadcastReceiver() {
                             }
                             Notif.cancelRemind(app, taskId)
                             PinNotifService.refresh(app)
+com.wangbuliao.todo.reminder.KeepAliveService.refresh(app)
                         }
                     } catch (e: Exception) {
                         Log.e("WblReminder", "done action failed", e)

@@ -29,6 +29,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -36,6 +37,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- v1.4.0：悬浮窗媒体采集透明页（拍照/相册/录音 → 随手记） -->
+        <activity
+            android:name=".floatwin.FloatMediaActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- 随手记悬浮窗服务 -->
         <service
@@ -55,6 +63,16 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="persistent pinned todo summary notification" />
+        </service>
+
+        <!-- 后台保活服务（状态通知显示未完成事项） -->
+        <service
+            android:name=".reminder.KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="background keep-alive guardian showing pending todo status notification" />
         </service>
 
         <receiver

@@ -52,9 +52,44 @@ object TaskRepo {
      * 随手记：文本直接入库（分类「随手记」）。
      * 标题=首行前 30 字，备注=全文。App 内对话框与悬浮窗面板共用。
      */
-    suspend fun quickNote(text: String): Long = withContext(Dispatchers.IO) {
+    /** 随手记·媒体（拍照/相册/录音）：悬浮窗透明页调用 */
+    suspend fun quickMedia(
+        title: String,
+        note: String = "",
+        images: List<String> = emptyList(),
+        audioPath: String = "",
+        audioDur: Long = 0
+    ): Long = withContext(Dispatchers.IO) {
+        db.addCategory(Task.QUICK_CATEGORY)
+        val now = System.currentTimeMillis()
+        db.insert(
+            Task(
+                title = title,
+                note = note,
+                category = Task.QUICK_CATEGORY,
+                createdAt = now,
+                updatedAt = now,
+                images = images,
+                audioPath = audioPath,
+                audioDur = audioDur
+            )
+        )
+    }
+
+    suspend fun quickNote(
+        text: String,
+        audioPath: String = "",
+        audioDur: Long = 0,
+        images: List<String> = emptyList()
+    ): Long = withContext(Dispatchers.IO) {
         val trimmed = text.trim()
-        val firstLine = trimmed.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: "随手记"
+        // 无文字但有附件时也允许保存（标题回退）
+        val firstLine = trimmed.lineSequence().firstOrNull { it.isNotBlank() }?.trim()
+            ?: when {
+                audioPath.isNotEmpty() -> "语音速记"
+                images.isNotEmpty() -> "图片速记"
+                else -> "随手记"
+            }
         val title = if (firstLine.length > 30) firstLine.take(30) + "…" else firstLine
         db.addCategory(Task.QUICK_CATEGORY)
         val now = System.currentTimeMillis()
@@ -64,7 +99,10 @@ object TaskRepo {
                 note = trimmed,
                 category = Task.QUICK_CATEGORY,
                 createdAt = now,
-                updatedAt = now
+                updatedAt = now,
+                audioPath = audioPath,
+                audioDur = audioDur,
+                images = images
             )
         )
     }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 随手记快记面板：标题行 + 多行输入 + 保存/打开App/收起 -->
+<!-- 随手记面板 v1.4：深色玻璃拟态（代码按主题上色）+ 媒体行（拍照/相册/录音） -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/panel_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="14dp"
@@ -16,12 +17,13 @@
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/panel_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="✍ 随手记"
-            android:textColor="#FF3A2E5F"
-            android:textSize="17sp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -31,8 +33,8 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="✕"
-            android:textColor="#FF8A80A6"
-            android:textSize="16sp" />
+            android:textColor="#99FFFFFF"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <EditText
@@ -45,29 +47,78 @@
         android:hint="此刻想到什么？直接记下来…"
         android:importantForAutofill="no"
         android:inputType="textMultiLine"
-        android:maxLines="6"
+        android:maxLines="5"
         android:minLines="3"
         android:padding="12dp"
-        android:textColor="#FF22202A"
-        android:textColorHint="#FF9A93B5"
+        android:textColor="#FFFFFFFF"
+        android:textColorHint="#66FFFFFF"
         android:textSize="15sp" />
+
+    <!-- 媒体行：拍照 / 相册 / 录音 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_cam"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_btn_ghost"
+            android:gravity="center"
+            android:text="📷 拍照"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="1dp" />
+
+        <TextView
+            android:id="@+id/btn_gallery"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_btn_ghost"
+            android:gravity="center"
+            android:text="🖼 相册"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="1dp" />
+
+        <TextView
+            android:id="@+id/btn_record"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_btn_ghost"
+            android:gravity="center"
+            android:text="🎤 录音"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:orientation="horizontal">
 
         <TextView
             android:id="@+id/btn_open"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="42dp"
             android:layout_weight="1"
             android:background="@drawable/bg_btn_ghost"
             android:gravity="center"
             android:text="打开 App"
-            android:textColor="#FF7C4DFF"
-            android:textSize="15sp" />
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp" />
 
         <Space
             android:layout_width="10dp"
@@ -76,13 +127,13 @@
         <TextView
             android:id="@+id/btn_save"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="42dp"
             android:layout_weight="2"
             android:background="@drawable/bg_btn_primary"
             android:gravity="center"
             android:text="保存 ✓"
             android:textColor="#FFFFFFFF"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

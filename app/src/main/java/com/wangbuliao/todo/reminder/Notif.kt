@@ -22,9 +22,11 @@ object Notif {
     private const val TAG = "WblNotif"
     const val CH_PIN = "wbl_pin"
     const val CH_FLOAT = "wbl_float"
+    const val CH_KEEP = "wbl_keep"
 
-    /** 提醒渠道 id 随铃声版本变化（Android 渠道声音创建后不可改） */
-    fun remindChannelId(): String = "wbl_reminder_v${Prefs.ringVer}"
+    /** 提醒渠道 id 随铃声版本 + 震动开关变化（Android 渠道声音/震动创建后不可改） */
+    fun remindChannelId(): String =
+        "wbl_reminder_v${Prefs.ringVer}_${if (Prefs.vibrate.value) 1 else 0}"
 
     fun ensureChannels(ctx: Context) {
         try {
@@ -41,15 +43,16 @@ object Notif {
                 }
             }
 
-            // 提醒渠道：高优先级弹出 + 自定义铃声 + 震动
+            // 提醒渠道：高优先级弹出 + 自定义铃声 + 震动（震动可在设置中关闭）
+            val vib = Prefs.vibrate.value
             val soundUri = Prefs.ringUri.value?.let { safeParse(it) }
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val remindCh = NotificationChannel(
                 cur, "记事提醒", NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "到期提醒：弹出横幅 + 铃声 + 震动"
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 300, 150, 300)
+                description = if (vib) "到期提醒：弹出横幅 + 铃声 + 震动" else "到期提醒：弹出横幅 + 铃声"
+                enableVibration(vib)
+                if (vib) vibrationPattern = longArrayOf(0, 300, 150, 300)
                 if (soundUri != null) {
                     setSound(
                         soundUri,
@@ -81,6 +84,17 @@ object Notif {
                 setShowBadge(false)
             }
             nm.createNotificationChannel(floatCh)
+
+            // 后台保活渠道（最低优先级静默常驻，显示未完成事项）
+            val keepCh = NotificationChannel(
+                CH_KEEP, "后台保活守护", NotificationManager.IMPORTANCE_MIN
+            ).apply {
+                description = "保持应用后台运行不被杀；状态通知显示未完成事项"
+                setShowBadge(false)
+                enableVibration(false)
+                setSound(null, null)
+            }
+            nm.createNotificationChannel(keepCh)
         } catch (e: Exception) {
             Log.e(TAG, "ensureChannels failed", e)
         }
