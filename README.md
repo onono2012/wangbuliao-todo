@@ -14,7 +14,7 @@
 ## 下载
 - **Releases**：https://github.com/onono2012/wangbuliao-todo/releases/latest （资产 `wbl-v<版本名>-vc<versionCode>.apk`）
 - 当前正式版：**v1.2.3 (10203)**
-- 官网主页（GitHub Pages）：见仓库 Settings → Pages（`docs/index.html`）
+- 官网主页（GitHub Pages）：https://onono2012.github.io/wangbuliao-todo/
 
 ## 构建
 ```bash
