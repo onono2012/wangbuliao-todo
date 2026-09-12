@@ -67,7 +67,7 @@ publish.py 其他模式：
 - 教训：ghproxy.net 忽略 cb 按路径缓存 json（TTL 分钟级）→ 回滚后有短暂幽灵窗口，自愈
 
 ## 官网主页
-GitHub Pages：仓库 `docs/index.html`（分支 main、路径 /docs），地址见仓库 Settings → Pages。
+GitHub Pages：**https://onono2012.github.io/wangbuliao-todo/** （源文件 `docs/index.html`，分支 main、路径 /docs；真机实测可达，页面动态拉取 wbl-update.json 展示最新版本与加速直链）
 
 ## 旧版自建 OTA（v1.0.x 方案，已废弃仅存档）
 - v1.0.x 曾支持「设置 → 更新服务器地址」自定义 OTA 端点（`wbl_prefs.xml/update_url`），v1.1.0 起移除，残留旧配置无影响。
