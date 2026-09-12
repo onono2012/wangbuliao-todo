@@ -16,6 +16,13 @@
 - 📋 保活状态通知：通知栏常驻显示未完成事项清单（紧急/最近提醒优先，最多 5 条+汇总），点通知或「打开管理器」动作直达应用管理页
 - 👁️ 全主题文字可读性修复：顶栏文字色按主题渐变逐套自动选黑/白（WCAG 对比度计算），中亮度渐变叠加极淡补偿纱（≤35%）；实测 10 套主题顶栏标题/副标题对比度全部达标（最低 4.19，此前炫彩副标题仅 3.47）
 
+### 发布记录
+- release APK 10,000,309B，sha256 99c5869e9f31568e058c85f618e5f8a472afcd1eb8b0bc3ef6f5713c207f3534
+- GitHub Release v1.4.0（资产 digest 与 sha256 一致）+ wbl-update.json 提交 main（检查线路 5/5 通过：raw/gh-proxy/ghproxy.net/jsDelivr/api.github）
+- 下载线路 4/5 通过（github 直连/gh-proxy/ghproxy.net/api 均 200；ghfast.top 整站暂时不可达，与本次发布无关，客户端自动切换其余线路）
+- 123 网盘 WebDAV 备份：APK + wbl-update.json + SHA256SUMS.txt
+- 官网 Pages wbl-latest.apk 已更新到 v1.4.0(vc10400)
+
 ## v1.3.1 (10301) — UI 全面优化
 
 - 🎨 主题全局生效：主题色贯穿主界面背景（wash 渐变/照片全屏）、卡片半透明、搜索框、顶栏，不再只有顶栏变色
