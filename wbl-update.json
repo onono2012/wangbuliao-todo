@@ -7,11 +7,12 @@
   "size": 10000309,
   "fileName": "wbl-v1.4.0-vc10400.apk",
   "routes": [
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560076628",
+    "https://onono2012.github.io/wangbuliao-todo/wbl-latest.apk",
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
     "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
     "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk"
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560076628",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk"
   ],
-  "publishedAt": "2026-09-12T22:43:58+0000"
+  "publishedAt": "2026-09-12T23:35:54+0000"
 }
