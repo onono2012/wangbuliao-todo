@@ -1,17 +1,17 @@
 {
-  "versionCode": 10204,
-  "versionName": "1.2.4",
+  "versionCode": 10203,
+  "versionName": "1.2.3",
   "force": true,
-  "desc": "## 测试版本\n- 测速功能验证专用（同 v1.2.3 内容，稍后删除）",
+  "desc": "## 更新内容\n- **智能线路测速**：下载前自动并行测速所有更新线路（单条限时 5 秒不拖累整体），优先选最快线路，大幅提升更新速度\n- **下载实时速度显示**：进度条同步显示当前下载速度（如「下载中 45% · 950KB/s」）\n- **防缓存检查**：检查更新自动绕过中转代理旧缓存，第一时间发现新版本\n- 多线路更新通道：raw / gh-proxy / ghproxy / jsDelivr 中转 + GitHub API 兜底，单线路失败自动切换\n- 断点续传跨线路共用，sha256 + 文件大小双重校验\n- 123 网盘同步备份分发\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。",
   "sha256": "b40c981e8897382e459a48c479992cbaba63c04d489ddbae3ea3049f8486c1a8",
   "size": 9626725,
-  "fileName": "wbl-v1.2.4-vc10204.apk",
+  "fileName": "wbl-v1.2.3-vc10203.apk",
   "routes": [
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/558950278",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.4/wbl-v1.2.4-vc10204.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.4/wbl-v1.2.4-vc10204.apk",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.4/wbl-v1.2.4-vc10204.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.4/wbl-v1.2.4-vc10204.apk"
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/558940693",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.3/wbl-v1.2.3-vc10203.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.3/wbl-v1.2.3-vc10203.apk",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.3/wbl-v1.2.3-vc10203.apk",
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.3/wbl-v1.2.3-vc10203.apk"
   ],
-  "publishedAt": "2026-09-12T08:57:21+0000"
+  "publishedAt": "2026-09-12T08:50:21+0000"
 }
