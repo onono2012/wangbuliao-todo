@@ -40,7 +40,9 @@ JSDELIVR = f"https://cdn.jsdelivr.net/gh/{OWNER}/{REPO}@main/wbl-update.json"
 PURGE = f"https://purge.jsdelivr.net/gh/{OWNER}/{REPO}@main/wbl-update.json"
 DAV = "https://webdav.123pan.cn/webdav"
 DAV_DIR = "/app"  # 网盘内存放目录：/webdav/app/
-DL_PROXIES = ["https://gh-proxy.com/", "https://ghproxy.net/", "https://ghfast.top/"]
+DL_PROXIES = ["https://gh-proxy.com/", "https://ghproxy.net/"]
+DL_LAST = ["https://ghfast.top/"]  # 不稳定，仅作末位兜底
+SITE_APK = f"https://{OWNER}.github.io/{REPO}/wbl-latest.apk"
 
 TOK = os.environ.get("GITHUB_TOKEN", "")
 DAV_USER = os.environ.get("WBL_WEBDAV_USER", "")
@@ -87,8 +89,12 @@ def sha256_file(path):
 
 def build_json(apk_name, version, vc, sha, size, desc, asset_id):
     direct = f"https://github.com/{OWNER}/{REPO}/releases/download/v{version}/{apk_name}"
-    routes = [f"{API}/releases/assets/{asset_id}"] if asset_id else []
-    routes += [p + direct for p in DL_PROXIES] + [direct]
+    # v1.4.1 起路由顺序：官网 Pages 直链首位 → GitHub 直连 → 代理 → API 资产 → ghfast 末位兜底
+    routes = [SITE_APK, direct]
+    routes += [p + direct for p in DL_PROXIES]
+    if asset_id:
+        routes.append(f"{API}/releases/assets/{asset_id}")
+    routes += [p + direct for p in DL_LAST]
     return {
         "versionCode": vc,
         "versionName": version,
