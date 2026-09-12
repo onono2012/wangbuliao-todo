@@ -36,8 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wangbuliao.todo.data.TaskRepo
+import com.wangbuliao.todo.floatwin.FloatingNoteService
 import com.wangbuliao.todo.reminder.AlarmScheduler
 import com.wangbuliao.todo.reminder.Notif
+import com.wangbuliao.todo.reminder.PinNotifService
+import com.wangbuliao.todo.util.Prefs
 import com.wangbuliao.todo.ui.EditTaskScreen
 import com.wangbuliao.todo.ui.MainViewModel
 import com.wangbuliao.todo.ui.Screen
@@ -71,6 +74,8 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {
             }
         }
+        // 恢复常驻服务：悬浮窗 + 置顶通知（覆盖安装后 BootReceiver 也会触发，这里兜底）
+        syncServices(ctx)
 
         setContent {
             WblTheme {
@@ -97,7 +102,6 @@ class MainActivity : ComponentActivity() {
                     when (screen) {
                         Screen.List -> TaskListScreen(vm, ui)
                         Screen.Edit -> {
-                            BackHandler { vm.backList() }
                             EditTaskScreen(vm, draft, ui)
                         }
                         Screen.Settings -> {
@@ -114,12 +118,32 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 从系统设置（通知/精确闹钟授权页）返回时刷新提醒安排
+        // 从系统设置（通知/精确闹钟/悬浮窗授权页）返回时刷新提醒安排与服务状态
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 AlarmScheduler.rescheduleAll(applicationContext)
             } catch (_: Exception) {
             }
+        }
+        syncServices(applicationContext)
+    }
+
+    private fun syncServices(ctx: android.content.Context) {
+        try {
+            if (Prefs.floatEnabled.value) {
+                if (FloatingNoteService.canDraw(ctx)) FloatingNoteService.start(ctx)
+                else {
+                    // 用户撤销了悬浮窗授权 → 关闭开关并停服务
+                    Prefs.setFloatEnabled(false)
+                    FloatingNoteService.stop(ctx)
+                }
+            } else {
+                FloatingNoteService.stop(ctx)
+            }
+            if (Prefs.pinNotif.value) PinNotifService.start(ctx)
+            else PinNotifService.stop(ctx)
+        } catch (e: Exception) {
+            android.util.Log.e("WblMain", "syncServices failed", e)
         }
     }
 }

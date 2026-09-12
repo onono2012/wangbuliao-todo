@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-files-path name="updates" path="Download/" />
+    <!-- 拍照记事：filesDir/images 经 FileProvider 提供给系统相机 -->
+    <files-path name="images" path="images/" />
+    <files-path name="audio" path="audio/" />
 </paths>

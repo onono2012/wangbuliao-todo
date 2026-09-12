@@ -28,3 +28,7 @@ Thumbs.db
 diag.txt
 release/*.apk
 release/*.bak
+
+# 隔离gradle缓存与推送日志
+.gradle-home/
+.push_apk.log

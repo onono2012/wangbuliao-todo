@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 阴影层 -->
+    <item android:left="1dp" android:top="2dp" android:right="1dp" android:bottom="0dp">
+        <shape android:shape="oval">
+            <solid android:color="#33000000" />
+        </shape>
+    </item>
+    <!-- 主体 -->
+    <item android:left="1dp" android:top="1dp" android:right="1dp" android:bottom="2dp">
+        <shape android:shape="oval">
+            <gradient
+                android:angle="135"
+                android:startColor="#FF7C4DFF"
+                android:centerColor="#FFE040FB"
+                android:endColor="#FF00BCD4" />
+        </shape>
+    </item>
+</layer-list>

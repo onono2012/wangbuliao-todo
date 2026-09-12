@@ -1,7 +1,9 @@
 package com.wangbuliao.todo.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +21,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,11 +42,13 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +56,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,15 +68,45 @@ import com.wangbuliao.todo.util.TimeFmt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(vm: MainViewModel, ui: UiState) {
+    val spec = LocalWblTheme.current
+    var showQuickNote by remember { mutableStateOf(false) }
+    var showSearch by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
+            // 主题渐变顶栏（无渐变的主题用 primary 纯色）
+            val bg = spec.gradient
             TopAppBar(
-                title = { Text("忘不了") },
+                title = {
+                    Text(
+                        "忘不了",
+                        color = if (bg != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                },
                 actions = {
-                    IconButton(onClick = { vm.openSettings() }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "设置")
+                    val tint = if (bg != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    IconButton(onClick = { showSearch = !showSearch }) {
+                        Icon(Icons.Filled.Search, contentDescription = "搜索", tint = tint)
                     }
-                }
+                    IconButton(onClick = { showQuickNote = true }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "随手记", tint = tint)
+                    }
+                    IconButton(onClick = { vm.openSettings() }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "设置", tint = tint)
+                    }
+                },
+                colors = if (bg == null) {
+                    TopAppBarDefaults.topAppBarColors()
+                } else {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = Color.White,
+                        actionIconContentColor = Color.White
+                    )
+                },
+                modifier = if (bg != null) {
+                    Modifier.background(Brush.horizontalGradient(bg))
+                } else Modifier
             )
         },
         floatingActionButton = {
@@ -76,6 +118,24 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
         }
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
+            // 搜索框
+            if (showSearch) {
+                OutlinedTextField(
+                    value = ui.search,
+                    onValueChange = { vm.setSearch(it) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    placeholder = { Text("搜索标题 / 内容 / 分类") },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                    trailingIcon = {
+                        if (ui.search.isNotEmpty()) {
+                            IconButton(onClick = { vm.setSearch("") }) {
+                                Icon(Icons.Filled.Close, "清空")
+                            }
+                        }
+                    }
+                )
+            }
             // 状态筛选行
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
@@ -124,8 +184,11 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     Alignment.Center
                 ) {
                     Text(
-                        if (ui.allTasks.isEmpty()) "还没有事项，点右下角「记一笔」开始"
-                        else "该筛选条件下没有事项",
+                        when {
+                            ui.search.isNotBlank() -> "没有匹配「${ui.search.trim()}」的事项"
+                            ui.allTasks.isEmpty() -> "还没有事项，点右下角「记一笔」开始\n顶栏 ✎ 或悬浮球可随手记"
+                            else -> "该筛选条件下没有事项"
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -141,18 +204,56 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
             }
         }
     }
+
+    if (showQuickNote) {
+        QuickNoteDialog(
+            onDismiss = { showQuickNote = false },
+            onSave = { vm.quickNote(it) }
+        )
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** 随手记对话框：一行/多行文本立即保存（分类=随手记） */
+@Composable
+fun QuickNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("✍ 随手记") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("此刻想到什么？直接记下来…") },
+                minLines = 2,
+                maxLines = 6
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val t = text.trim()
+                    if (t.isNotEmpty()) onSave(t)
+                    onDismiss()
+                }
+            ) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TaskCard(task: Task, vm: MainViewModel) {
     val now = System.currentTimeMillis()
-    val dark = isSystemInDarkTheme()
+    val dark = wblIsDark()
     val highlight = task.urgent && !task.done
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Card(
-        onClick = { vm.openEdit(task.id) },
         modifier = Modifier.fillMaxWidth(),
         colors = if (highlight) {
             CardDefaults.cardColors(
@@ -163,7 +264,12 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
         }
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
+            Modifier.fillMaxWidth()
+                .combinedClickable(
+                    onClick = { vm.openEdit(task.id) },
+                    onLongClick = { vm.togglePinned(task) }
+                )
+                .padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
         ) {
             Checkbox(
                 checked = task.done,
@@ -171,15 +277,25 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
                 modifier = Modifier.align(Alignment.CenterVertically)
             )
             Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (task.done) TextDecoration.LineThrough else null,
-                    color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (task.pinned && !task.done) {
+                        Icon(
+                            Icons.Outlined.PushPin, "已置顶",
+                            Modifier.size(15.dp).padding(end = 3.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (task.done) TextDecoration.LineThrough else null,
+                        color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
                 if (task.note.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
@@ -221,6 +337,32 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
                                 color = MaterialTheme.colorScheme.onError
                             )
                         }
+                    }
+                    // 录音徽章
+                    if (task.audioPath.isNotEmpty()) {
+                        Icon(
+                            Icons.Outlined.Mic, "语音",
+                            Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            TimeFmt.dur(task.audioDur),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    // 图片徽章
+                    if (task.images.isNotEmpty()) {
+                        Icon(
+                            Icons.Outlined.Image, "图片",
+                            Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Text(
+                            "${task.images.size}图",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
                     }
                     // 提醒时间
                     if (task.remindAt > 0 && !task.done) {
@@ -269,7 +411,7 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("删除事项") },
-            text = { Text("确定删除「${task.title}」吗？删除后不可恢复。") },
+            text = { Text("确定删除「${task.title}」吗？其录音与图片附件将一并删除，不可恢复。") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false

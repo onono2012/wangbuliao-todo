@@ -9,25 +9,78 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/** 提醒闹钟触发：标记已提醒 + 发通知 */
+/**
+ * 提醒闹钟触发：标记已提醒 + 发通知。
+ * 通知栏动作：DONE=直接完成；SNOOZE=10 分钟后再提醒（改期闹钟）。
+ */
 class ReminderReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context, intent: Intent) {
         val taskId = intent.getLongExtra("task_id", 0L)
-        val title = intent.getStringExtra("title") ?: "待办提醒"
-        val note = intent.getStringExtra("note") ?: ""
-        val category = intent.getStringExtra("category") ?: ""
-        val urgent = intent.getBooleanExtra("urgent", false)
         val app = context.applicationContext
-        val pending = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                if (taskId > 0) TaskRepo.markReminded(taskId)
-                Notif.remind(app, taskId, title, note, category, urgent)
-            } catch (e: Exception) {
-                Log.e("WblReminder", "remind failed", e)
-            } finally {
-                pending.finish()
+        when (intent.action) {
+            ACTION_DONE -> {
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (taskId > 0) {
+                            TaskRepo.get(taskId)?.let { t ->
+                                AlarmScheduler.cancel(app, t)
+                                TaskRepo.setDone(taskId, true)
+                            }
+                            Notif.cancelRemind(app, taskId)
+                            PinNotifService.refresh(app)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WblReminder", "done action failed", e)
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
+            ACTION_SNOOZE -> {
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (taskId > 0) {
+                            val t = TaskRepo.get(taskId)
+                            if (t != null) {
+                                val at = System.currentTimeMillis() + 10 * 60 * 1000L
+                                TaskRepo.setRemindAt(taskId, at)
+                                AlarmScheduler.schedule(app, t.copy(remindAt = at))
+                            }
+                            Notif.cancelRemind(app, taskId)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WblReminder", "snooze action failed", e)
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
+            else -> {
+                // 闹钟触发：发提醒通知
+                val title = intent.getStringExtra("title") ?: "待办提醒"
+                val note = intent.getStringExtra("note") ?: ""
+                val category = intent.getStringExtra("category") ?: ""
+                val urgent = intent.getBooleanExtra("urgent", false)
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (taskId > 0) TaskRepo.markReminded(taskId)
+                        Notif.remind(app, taskId, title, note, category, urgent)
+                    } catch (e: Exception) {
+                        Log.e("WblReminder", "remind failed", e)
+                    } finally {
+                        pending.finish()
+                    }
+                }
             }
         }
+    }
+
+    companion object {
+        const val ACTION_DONE = "com.wangbuliao.todo.remind.DONE"
+        const val ACTION_SNOOZE = "com.wangbuliao.todo.remind.SNOOZE"
     }
 }

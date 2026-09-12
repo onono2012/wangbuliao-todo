@@ -19,11 +19,27 @@ class DbHelper private constructor(context: Context) :
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         // 数据兼容规则：升级必须 try-catch 兜底，保全旧数据，失败时降级兼容启动，严禁闪退
         try {
+            if (oldVersion < 2) {
+                // v2: 记事本化——置顶/录音/图片
+                safeExec(db, "ALTER TABLE tasks ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+                safeExec(db, "ALTER TABLE tasks ADD COLUMN audio_path TEXT NOT NULL DEFAULT ''")
+                safeExec(db, "ALTER TABLE tasks ADD COLUMN audio_dur INTEGER NOT NULL DEFAULT 0")
+                safeExec(db, "ALTER TABLE tasks ADD COLUMN images TEXT NOT NULL DEFAULT ''")
+            }
             db.execSQL(CREATE_TASKS)
             db.execSQL(CREATE_CATEGORIES)
             presetCategories(db)
         } catch (e: Exception) {
             Log.e(TAG, "onUpgrade failed, keep old data", e)
+        }
+    }
+
+    /** 单条 DDL 容错执行（列已存在等场景不中断升级） */
+    private fun safeExec(db: SQLiteDatabase, sql: String) {
+        try {
+            db.execSQL(sql)
+        } catch (e: Exception) {
+            Log.w(TAG, "safeExec skipped: $sql (${e.message})")
         }
     }
 
@@ -72,7 +88,18 @@ class DbHelper private constructor(context: Context) :
         return writableDatabase.update("tasks", v, "id=?", arrayOf(id.toString()))
     }
 
+    fun setRemindAt(id: Long, remindAt: Long, now: Long): Int {
+        val v = ContentValues().apply {
+            put("remind_at", remindAt)
+            put("reminded", 0)
+            put("updated_at", now)
+        }
+        return writableDatabase.update("tasks", v, "id=?", arrayOf(id.toString()))
+    }
+
     fun pendingReminders(): List<Task> = queryTasks().filter { !it.done && it.remindAt > 0 }
+
+    fun pendingCount(): Int = queryTasks().count { !it.done }
 
     fun queryCategories(): List<String> {
         val out = mutableListOf<String>()
@@ -103,8 +130,37 @@ class DbHelper private constructor(context: Context) :
         remindAt = getLong(getColumnIndexOrThrow("remind_at")),
         reminded = getInt(getColumnIndexOrThrow("reminded")) == 1,
         createdAt = getLong(getColumnIndexOrThrow("created_at")),
-        updatedAt = getLong(getColumnIndexOrThrow("updated_at"))
+        updatedAt = getLong(getColumnIndexOrThrow("updated_at")),
+        pinned = colInt("pinned") == 1,
+        audioPath = colStr("audio_path"),
+        audioDur = colLong("audio_dur"),
+        images = colStr("images").split("\n").filter { it.isNotBlank() }
     )
+
+    /** 兼容读取：列不存在（极端降级场景）返回默认值，严禁闪退 */
+    private fun Cursor.colInt(name: String): Int =
+        try {
+            val i = getColumnIndex(name)
+            if (i < 0) 0 else getInt(i)
+        } catch (e: Exception) {
+            0
+        }
+
+    private fun Cursor.colLong(name: String): Long =
+        try {
+            val i = getColumnIndex(name)
+            if (i < 0) 0L else getLong(i)
+        } catch (e: Exception) {
+            0L
+        }
+
+    private fun Cursor.colStr(name: String): String =
+        try {
+            val i = getColumnIndex(name)
+            if (i < 0) "" else getString(i) ?: ""
+        } catch (e: Exception) {
+            ""
+        }
 
     private fun Task.toValues() = ContentValues().apply {
         put("title", title)
@@ -116,13 +172,17 @@ class DbHelper private constructor(context: Context) :
         put("reminded", if (reminded) 1 else 0)
         put("created_at", createdAt)
         put("updated_at", updatedAt)
+        put("pinned", if (pinned) 1 else 0)
+        put("audio_path", audioPath)
+        put("audio_dur", audioDur)
+        put("images", images.joinToString("\n"))
     }
 
     companion object {
         private const val TAG = "WblDb"
         private const val DB_NAME = "wbl.db"
-        private const val DB_VERSION = 1
-        val PRESET = listOf("工作", "生活", "学习", "其他")
+        private const val DB_VERSION = 2
+        val PRESET = listOf("工作", "生活", "学习", Task.QUICK_CATEGORY, "其他")
 
         private const val CREATE_TASKS = """CREATE TABLE IF NOT EXISTS tasks(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,7 +194,11 @@ class DbHelper private constructor(context: Context) :
             remind_at INTEGER NOT NULL DEFAULT 0,
             reminded INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL DEFAULT 0,
-            updated_at INTEGER NOT NULL DEFAULT 0)"""
+            updated_at INTEGER NOT NULL DEFAULT 0,
+            pinned INTEGER NOT NULL DEFAULT 0,
+            audio_path TEXT NOT NULL DEFAULT '',
+            audio_dur INTEGER NOT NULL DEFAULT 0,
+            images TEXT NOT NULL DEFAULT '')"""
 
         private const val CREATE_CATEGORIES = """CREATE TABLE IF NOT EXISTS categories(
             name TEXT PRIMARY KEY,

@@ -34,10 +34,38 @@ object TaskRepo {
         withContext(Dispatchers.IO) { db.markReminded(id) }
     }
 
+    /** 贪睡改期：重设提醒时间并清除已提醒标记 */
+    suspend fun setRemindAt(id: Long, remindAt: Long) {
+        withContext(Dispatchers.IO) { db.setRemindAt(id, remindAt, System.currentTimeMillis()) }
+    }
+
     suspend fun pendingReminders(): List<Task> =
         withContext(Dispatchers.IO) { db.pendingReminders() }
 
+    suspend fun pendingCount(): Int = withContext(Dispatchers.IO) { db.pendingCount() }
+
     suspend fun addCategory(name: String) {
         withContext(Dispatchers.IO) { db.addCategory(name) }
+    }
+
+    /**
+     * 随手记：文本直接入库（分类「随手记」）。
+     * 标题=首行前 30 字，备注=全文。App 内对话框与悬浮窗面板共用。
+     */
+    suspend fun quickNote(text: String): Long = withContext(Dispatchers.IO) {
+        val trimmed = text.trim()
+        val firstLine = trimmed.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: "随手记"
+        val title = if (firstLine.length > 30) firstLine.take(30) + "…" else firstLine
+        db.addCategory(Task.QUICK_CATEGORY)
+        val now = System.currentTimeMillis()
+        db.insert(
+            Task(
+                title = title,
+                note = trimmed,
+                category = Task.QUICK_CATEGORY,
+                createdAt = now,
+                updatedAt = now
+            )
+        )
     }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 悬浮球：渐变圆形 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="135"
+        android:startColor="#FF7C4DFF"
+        android:centerColor="#FFE040FB"
+        android:endColor="#FF00BCD4" />
+    <size android:width="56dp" android:height="56dp" />
+</shape>

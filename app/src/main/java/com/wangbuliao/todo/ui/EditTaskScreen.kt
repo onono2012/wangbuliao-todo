@@ -1,16 +1,27 @@
 package com.wangbuliao.todo.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
@@ -26,16 +37,30 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import com.wangbuliao.todo.media.AudioSection
+import com.wangbuliao.todo.media.ImageStore
+import com.wangbuliao.todo.media.Thumb
 import com.wangbuliao.todo.util.TimeFmt
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -158,18 +183,57 @@ private fun RemindPickerDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
+    val ctx = LocalContext.current
     val isNew = draft.id <= 0
     var showPicker by remember { mutableStateOf(false) }
     var showCatDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showImageViewer by remember { mutableStateOf<String?>(null) }
+    var showDiscardConfirm by remember { mutableStateOf(false) }
     var newCat by remember { mutableStateOf("") }
+
+    // 系统返回键：草稿有未保存修改时先弹确认，防误丢已填内容/照片/录音
+    BackHandler {
+        if (vm.isDraftDirty()) showDiscardConfirm = true else vm.backList()
+    }
+
+    // 拍照：FileProvider 提供 filesDir/images 目标文件
+    var camUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { ok ->
+        val u = camUri
+        camUri = null
+        if (u != null) {
+            val path = ImageStore.pathFromUri(ctx, u)
+            if (ok && path != null && draft.images.size < ImageStore.maxImages()) {
+                vm.updateDraft { it.copy(images = it.images + path) }
+            } else {
+                // 取消/失败/已达上限：清理相机残留文件（ColorOS 取消也可能已写入），防孤儿图片占存储
+                ImageStore.rawPathFromUri(ctx, u)?.let { ImageStore.delete(it) }
+            }
+        }
+    }
+    // 相册多选：导入应用私有目录（与拍照文件统一管理）
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(9)
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            val room = ImageStore.maxImages() - draft.images.size
+            val added = uris.take(room).mapNotNull { ImageStore.importUri(ctx, it) }
+            if (added.isNotEmpty()) vm.updateDraft { it.copy(images = it.images + added) }
+            if (uris.size > room) vm.notifyMsg("最多 ${ImageStore.maxImages()} 张，已保留前 $room 张")
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(if (isNew) "记一笔" else "编辑事项") },
                 navigationIcon = {
-                    IconButton(onClick = { vm.backList() }) {
+                    IconButton(onClick = {
+                        if (vm.isDraftDirty()) showDiscardConfirm = true else vm.backList()
+                    }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
@@ -246,6 +310,94 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             }
             Spacer(Modifier.height(10.dp))
 
+            // ── 置顶 ──
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("置顶", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(
+                        "置顶事项固定在待办列表最上方",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = draft.pinned,
+                    onCheckedChange = { v -> vm.updateDraft { it.copy(pinned = v) } }
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+
+            // ── 语音记事 ──
+            AudioSection(
+                audioPath = draft.audioPath,
+                audioDur = draft.audioDur,
+                onAudio = { path, dur -> vm.updateDraft { it.copy(audioPath = path, audioDur = dur) } },
+                onClear = { vm.removeDraftAudio() },
+                onDenied = { vm.notifyMsg("需要麦克风权限才能录音") }
+            )
+            Spacer(Modifier.height(14.dp))
+
+            // ── 图片记事 ──
+            Text("图片", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "拍照或从相册选择（最多 ${ImageStore.maxImages()} 张）",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                draft.images.forEach { path ->
+                    Box {
+                        Thumb(path = path, size = 84.dp, onClick = { showImageViewer = path })
+                        Icon(
+                            Icons.Outlined.Close, "移除图片",
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(2.dp)
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .clickable { vm.removeDraftImage(path) }
+                                .padding(3.dp),
+                            tint = Color.White
+                        )
+                    }
+                }
+                if (draft.images.size < ImageStore.maxImages()) {
+                    ImageAddButton(
+                        icon = Icons.Filled.AddAPhoto, label = "拍照",
+                        tint = MaterialTheme.colorScheme.primary
+                    ) {
+                        try {
+                            val f = ImageStore.newCameraFile(ctx)
+                            val u = FileProvider.getUriForFile(
+                                ctx, "${ctx.packageName}.fileprovider", f
+                            )
+                            camUri = u
+                            cameraLauncher.launch(u)
+                        } catch (e: Exception) {
+                            // ColorOS 等设备可能拒绝启动系统相机（权限撤销/无相机应用）：提示而非崩溃
+                            camUri = null
+                            vm.notifyMsg("无法启动相机：${e.message ?: "系统拒绝"}")
+                        }
+                    }
+                    ImageAddButton(
+                        icon = Icons.Filled.PhotoLibrary, label = "相册",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    ) {
+                        galleryLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -317,11 +469,25 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             }
         )
     }
+    showImageViewer?.let { path ->
+        AlertDialog(
+            onDismissRequest = { showImageViewer = null },
+            title = { Text("查看图片") },
+            text = {
+                Box(Modifier.fillMaxWidth()) {
+                    Thumb(path = path, size = 300.dp)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showImageViewer = null }) { Text("关闭") }
+            }
+        )
+    }
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("删除事项") },
-            text = { Text("确定删除「${draft.title}」吗？删除后不可恢复。") },
+            text = { Text("确定删除「${draft.title}」吗？其录音与图片附件将一并删除，不可恢复。") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -332,5 +498,48 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
             }
         )
+    }
+    if (showDiscardConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirm = false },
+            title = { Text("放弃编辑？") },
+            text = {
+                Text("本次修改尚未保存。放弃后，已填写的内容和新拍摄/选择的图片、录音将被丢弃。")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardConfirm = false
+                    vm.discardDraft()
+                }) {
+                    Text("放弃", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardConfirm = false }) { Text("继续编辑") }
+            }
+        )
+    }
+}
+
+
+/** 图片添加按钮（虚线风格方块） */
+@Composable
+private fun ImageAddButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        Modifier.size(84.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(tint.copy(alpha = 0.10f))
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(icon, label, Modifier.size(26.dp), tint = tint)
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
     }
 }

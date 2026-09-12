@@ -1,6 +1,6 @@
 package com.wangbuliao.todo.data
 
-/** 待办事项实体 */
+/** 记事/待办实体 */
 data class Task(
     val id: Long = 0,
     val title: String = "",
@@ -15,9 +15,18 @@ data class Task(
     /** 提醒是否已发出（防重复通知） */
     val reminded: Boolean = false,
     val createdAt: Long = 0,
-    val updatedAt: Long = 0
+    val updatedAt: Long = 0,
+    /** 置顶（列表最上方） */
+    val pinned: Boolean = false,
+    /** 录音文件路径（""=无录音） */
+    val audioPath: String = "",
+    /** 录音时长（毫秒） */
+    val audioDur: Long = 0,
+    /** 图片文件路径列表 */
+    val images: List<String> = emptyList()
 ) {
     companion object {
         const val DEFAULT_CATEGORY = "工作"
+        const val QUICK_CATEGORY = "随手记"
     }
 }
