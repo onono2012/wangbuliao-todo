@@ -9,6 +9,7 @@
   :root {
     --bg: #f6f7fb; --card: #ffffff; --text: #1c2333; --sub: #5a6478;
     --accent: #4f7cff; --accent2: #7c5cff; --line: #e6e9f2;
+    --ok: #18a058; --bad: #d03050; --warn: #e6a23c;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #12151c; --card: #1b2029; --text: #e8ebf2; --sub: #9aa3b5; --line: #2a3140; }
@@ -43,19 +44,19 @@
   section { margin: 36px 0; }
   h2 { font-size: 20px; margin-bottom: 16px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px;
-  }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
   .card .ico { font-size: 24px; }
   .card h3 { font-size: 15px; margin: 8px 0 4px; }
   .card p { font-size: 13px; color: var(--sub); }
   .dl-list { list-style: none; }
   .dl-list li {
     background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-    padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 13px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
-  .dl-list .tag { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--sub); border: 1px solid var(--line); }
+  .dl-list .tag { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--sub); border: 1px solid var(--line); flex-shrink: 0; }
   .dl-list a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; word-break: break-all; }
+  .dl-list .st { font-size: 12px; margin-left: auto; flex-shrink: 0; color: var(--sub); }
+  .st.ok { color: var(--ok); } .st.bad { color: var(--bad); } .st.warn { color: var(--warn); }
   .note { font-size: 13px; color: var(--sub); margin-top: 10px; }
   footer {
     text-align: center; padding: 28px 20px 40px; font-size: 13px; color: var(--sub);
@@ -71,7 +72,7 @@
   <h1>忘不了</h1>
   <p class="slogan">简洁可靠的待办记事本 · 重要的事，一件都不会忘</p>
   <div class="btns">
-    <a class="btn btn-main" href="https://github.com/onono2012/wangbuliao-todo/releases/latest">下载最新版</a>
+    <a class="btn btn-main" id="mainDl" href="wbl-latest.apk">官网直接下载</a>
     <a class="btn btn-ghost" href="https://github.com/onono2012/wangbuliao-todo">源代码</a>
   </div>
   <p class="ver" id="ver">正在获取最新版本信息…</p>
@@ -92,10 +93,16 @@
   </section>
 
   <section>
-    <h2>下载渠道</h2>
-    <ul class="dl-list">
-      <li><span class="tag">官方</span><a href="https://github.com/onono2012/wangbuliao-todo/releases/latest">GitHub Releases（全部版本）</a></li>
-      <li><span class="tag">加速</span><a id="mirror" href="https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/latest">中转加速直链（gh-proxy）</a></li>
+    <h2>下载渠道 <span style="font-size:12px;color:var(--sub);font-weight:400">（状态为当前网络实测，点击可用线路下载）</span></h2>
+    <ul class="dl-list" id="dlList">
+      <li data-k="site"><span class="tag">推荐</span><a href="wbl-latest.apk">官网直接下载（本站托管）</a><span class="st">同站 · 最快</span></li>
+      <li data-k="rel"><span class="tag">官方</span><a href="https://github.com/onono2012/wangbuliao-todo/releases/latest">GitHub Releases（全部版本）</a><span class="st">检测中…</span></li>
+      <li data-k="direct"><span class="tag">直链</span><a href="#">GitHub 直链 APK</a><span class="st">检测中…</span></li>
+      <li data-k="ghproxy.net"><span class="tag">加速</span><a href="#">ghproxy.net 中转</a><span class="st">检测中…</span></li>
+      <li data-k="ghfast.top"><span class="tag">加速</span><a href="#">ghfast.top 中转</a><span class="st">检测中…</span></li>
+      <li data-k="gh.llkk.cc"><span class="tag">加速</span><a href="#">gh.llkk.cc 中转</a><span class="st">检测中…</span></li>
+      <li data-k="github.moeyy.xyz"><span class="tag">加速</span><a href="#">github.moeyy.xyz 中转</a><span class="st">检测中…</span></li>
+      <li data-k="gh-proxy.com"><span class="tag">加速</span><a href="#">gh-proxy.com 中转</a><span class="st">检测中…</span></li>
       <li><span class="tag">备份</span><span style="font-size:14px;color:var(--sub)">123 网盘同步备份（联系发布者获取）</span></li>
     </ul>
     <p class="note">安装 APK 需允许「安装未知应用」权限；覆盖升级保留全部数据（同一签名）。要求 Android 8.0 及以上。</p>
@@ -116,29 +123,107 @@
 
 <script>
 (function () {
-  var sources = [
-    "https://cdn.jsdelivr.net/gh/onono2012/wangbuliao-todo@main/wbl-update.json",
-    "https://raw.githubusercontent.com/onono2012/wangbuliao-todo/main/wbl-update.json"
-  ];
+  var PROXIES = ["ghproxy.net", "ghfast.top", "gh.llkk.cc", "github.moeyy.xyz", "gh-proxy.com"];
+  var apkUrl = null; // github 直链 APK（由 json 动态得出）
+  var probeResults = {}; // k -> {ok:bool, ms:number}
+  var mainBtn = document.getElementById("mainDl");
+
+  function row(k) { return document.querySelector('li[data-k="' + k + '"]'); }
+  function setSt(k, cls, txt) {
+    var li = row(k); if (!li) return;
+    var s = li.querySelector(".st"); s.className = "st " + cls; s.textContent = txt;
+  }
+  function setHref(k, url) {
+    var li = row(k); if (!li) return;
+    li.querySelector("a").href = url;
+  }
+
+  // 主按钮智能选路：本站APK > github直链 > 各代理(按延迟)
+  function updateMainBtn() {
+    var best = null;
+    if (probeResults["site"] && probeResults["site"].ok) { best = "wbl-latest.apk"; mainBtn.textContent = "官网直接下载"; }
+    else if (probeResults["direct"] && probeResults["direct"].ok && apkUrl) { best = apkUrl; mainBtn.textContent = "GitHub 直链下载"; }
+    else {
+      var cands = PROXIES.filter(function (p) { return probeResults[p] && probeResults[p].ok && apkUrl; })
+        .sort(function (a, b) { return probeResults[a].ms - probeResults[b].ms; });
+      if (cands.length) { best = "https://" + cands[0] + "/" + apkUrl; mainBtn.textContent = cands[0] + " 加速下载"; }
+    }
+    if (best) mainBtn.href = best;
+    else mainBtn.href = "https://github.com/onono2012/wangbuliao-todo/releases/latest";
+  }
+
+  // HEAD 探测（no-cors 只测连通性，不耗流量）
+  function probe(k, url, ms) {
+    ms = ms || 6000;
+    var t0 = Date.now();
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, ms);
+    fetch(url, { method: "HEAD", mode: "no-cors", signal: ctl.signal })
+      .then(function () {
+        clearTimeout(timer);
+        probeResults[k] = { ok: true, ms: Date.now() - t0 };
+        setSt(k, "ok", "✓ 可用 " + probeResults[k].ms + "ms");
+        updateMainBtn();
+      })
+      .catch(function (e) {
+        clearTimeout(timer);
+        probeResults[k] = { ok: e.name === "AbortError", ms: Date.now() - t0 };
+        if (e.name === "AbortError") setSt(k, "warn", "⚠ 慢（可尝试）");
+        else setSt(k, "bad", "✗ 当前网络不可达");
+        updateMainBtn();
+      });
+  }
+
+  // 本站托管 APK 探测（同源可读状态码：404=未部署，自动回退其他线路）
+  var siteApk = new URL("wbl-latest.apk", location.href).href;
+  (function () {
+    var t0 = Date.now();
+    fetch(siteApk, { method: "HEAD" })
+      .then(function (r) {
+        if (r.ok) {
+          probeResults["site"] = { ok: true, ms: Date.now() - t0 };
+          setSt("site", "ok", "✓ 可用 " + probeResults["site"].ms + "ms");
+        } else {
+          probeResults["site"] = { ok: false, ms: 0 };
+          setSt("site", "bad", "✗ 本站未部署(" + r.status + ")");
+          setHref("site", "https://github.com/onono2012/wangbuliao-todo/releases/latest");
+        }
+        updateMainBtn();
+      })
+      .catch(function () {
+        probeResults["site"] = { ok: false, ms: 0 };
+        setSt("site", "bad", "✗ 本站未部署");
+        setHref("site", "https://github.com/onono2012/wangbuliao-todo/releases/latest");
+        updateMainBtn();
+      });
+  })();
+  probe("rel", "https://github.com/onono2012/wangbuliao-todo/releases/latest");
+  updateMainBtn();
+
   function render(d) {
     document.getElementById("ver").textContent =
       "最新版本 v" + d.versionName + " · " + (d.size ? (d.size / 1048576).toFixed(1) + " MB · " : "") +
       "发布于 " + String(d.publishedAt || "").slice(0, 10);
-    var mirror = document.getElementById("mirror");
-    if (d.fileName && d.versionName) {
-      mirror.href = "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v" +
-        d.versionName + "/" + d.fileName;
-      mirror.textContent = "v" + d.versionName + " 中转加速直链（gh-proxy）";
-    }
+    apkUrl = "https://github.com/onono2012/wangbuliao-todo/releases/download/v" + d.versionName + "/" + d.fileName;
+    setHref("direct", apkUrl);
+    PROXIES.forEach(function (p) { setHref(p, "https://" + p + "/" + apkUrl); });
+    probe("direct", apkUrl);
+    PROXIES.forEach(function (p) { probe(p, "https://" + p + "/" + apkUrl); });
     if (d.desc) {
       var first = d.desc.split("\n").filter(function (l) { return l.trim().indexOf("-") === 0; }).slice(0, 3);
       if (first.length) document.getElementById("desc").innerHTML =
         "<strong>v" + d.versionName + " 更新要点</strong><br>" + first.join("<br>");
     }
   }
+
+  var sources = [
+    "https://cdn.jsdelivr.net/gh/onono2012/wangbuliao-todo@main/wbl-update.json",
+    "https://raw.githubusercontent.com/onono2012/wangbuliao-todo/main/wbl-update.json"
+  ];
   function tryFetch(i) {
     if (i >= sources.length) {
       document.getElementById("ver").textContent = "最新版本请见 GitHub Releases";
+      ["direct"].concat(PROXIES).forEach(function (k) { setSt(k, "", "清单获取失败"); });
       return;
     }
     fetch(sources[i] + (sources[i].indexOf("?") < 0 ? "?cb=" : "&cb=") + Date.now())
