@@ -1,17 +1,17 @@
 {
-  "versionCode": 10300,
-  "versionName": "1.3.0",
+  "versionCode": 10400,
+  "versionName": "1.4.0",
   "force": true,
-  "desc": "## 更新内容\n- **全新主题系统**：内置 6 套精美主题（默认「炫彩」轻奢渐变，含「肖战」主题等），设置页自由切换、即改即生效并持久保存\n- **录音记事**：编辑页一键录音，实时波形显示，内置播放器回放，记事可听可看\n- **拍照/图片记事**：编辑页支持相机拍照或相册选图，多图附件，列表缩略图预览\n- **随手记**：列表页与悬浮窗双入口快速记录文字，自动归入「随手记」分类\n- **悬浮窗快记**：不打开 App，任意界面一键弹出快速记事（需授予悬浮窗权限）\n- **提醒增强**：提醒通知常驻置顶，支持自定义提醒铃声（系统铃声选择器）\n- **防误删**：编辑页有未保存修改时返回弹出确认框，可继续编辑或放弃修改\n- **存储优化**：移除图片/录音、放弃草稿时自动清理对应磁盘文件，不再残留占用\n- 多处界面细节优化，更流畅稳定\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。旧版本用户可通过 App 内「检查更新」直接覆盖升级，数据自动保留。",
-  "sha256": "934d382e94c54c3b8ed729d35484ab6eaa8055b62a3f09980ed715d4fc3defd6",
-  "size": 9693473,
-  "fileName": "wbl-v1.3.0-vc10300.apk",
+  "desc": "## 更新内容\n- **底部导航大改版**：待办 / 日历 / 主题 / 设置 四页直达，切换更顺手\n- **主题独立成页**：十套精美主题大卡片预览（炫彩 / 肖战 / 极光 / 暮山紫 / 鎏金 / 深海蓝 / 清新绿 / 暖阳橙 / 樱花粉 / 极夜黑），全屏渐变洗色 + 光斑氛围背景，切换即时全局生效\n- **自定义照片主题**：相册选图 → 自动按屏幕比例裁剪 → 全屏背景 + 悬浮球圆贴 + 照片主色自动提取，一键做专属主题（可更换/移除）\n- **全新日历页**：公历 + 农历 + 24 节气 + 除夕/春节/干支生肖；有事项的日期带圆点标记，点任意日期查看当天事项、一键为当天记一笔\n- **文字可读性全面修复**：顶栏文字色按主题自动选黑/白并做对比度补偿，任何主题下都清晰可读\n- **后台保活**：保活守护服务（前台服务常驻 + 开机自恢复），一键申请电池优化白名单；通知栏常驻显示未完成事项清单，点「打开管理器」直达应用管理页\n- **随手记面板升级**：深色玻璃拟态 + 主题主色按钮，新增 📷拍照 / 🖼相册 / 🎤录音 直达按钮，媒体速记自动入「随手记」\n- **悬浮窗瘦身**：悬浮球更小巧不挡视线，跟随主题即时变色/换图\n- **震动体系**：新增「震动提醒」总开关；到期通知长-短-长震动、完成待办轻震反馈\n- **待办转已办优化**：完成时震动 + 明确去向提示，已办自动沉底按完成时间排序\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。旧版本用户可通过 App 内「检查更新」直接覆盖升级，数据自动保留。",
+  "sha256": "99c5869e9f31568e058c85f618e5f8a472afcd1eb8b0bc3ef6f5713c207f3534",
+  "size": 10000309,
+  "fileName": "wbl-v1.4.0-vc10400.apk",
   "routes": [
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/559328651",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.3.0/wbl-v1.3.0-vc10300.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.3.0/wbl-v1.3.0-vc10300.apk",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.3.0/wbl-v1.3.0-vc10300.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.3.0/wbl-v1.3.0-vc10300.apk"
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560076628",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk",
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.0/wbl-v1.4.0-vc10400.apk"
   ],
-  "publishedAt": "2026-09-12T13:40:43+0000"
+  "publishedAt": "2026-09-12T22:43:58+0000"
 }
