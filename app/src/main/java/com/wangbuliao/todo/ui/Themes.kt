@@ -1,6 +1,7 @@
 package com.wangbuliao.todo.ui
 
 import androidx.compose.material3.darkColorScheme
+import com.wangbuliao.todo.R
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
@@ -19,7 +20,13 @@ data class WblThemeSpec(
     /** 强制深色（极夜黑主题） */
     val forceDark: Boolean = false,
     /** 设置页预览色 */
-    val preview: List<Color>
+    val preview: List<Color>,
+    /** 全屏照片背景（drawable 资源；null = 主题色 wash 渐变背景） */
+    val bgRes: Int? = null,
+    /** 主题预览图（设置页圆形预览；null = 用 preview 渐变色点） */
+    val previewRes: Int? = null,
+    /** 悬浮球圆形贴图（null = 渐变球） */
+    val bubbleRes: Int? = null
 )
 
 private fun light(
@@ -61,13 +68,16 @@ val WBL_THEMES: List<WblThemeSpec> = listOf(
         gradient = listOf(Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00BCD4)),
         preview = listOf(Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00BCD4))
     ),
-    // ② 肖战：红海应援色
+    // ② 肖战：红海应援色 + 高清帅照全屏背景
     WblThemeSpec(
-        id = "xiaozhan", name = "肖战", desc = "红海 · 热爱可抵岁月漫长",
+        id = "xiaozhan", name = "肖战", desc = "红海 · 高清帅照全屏背景",
         light = light(0xFFE60027, 0xFFFFDAD9, 0xFFC2185B, 0xFFFF6D00),
         dark = dark(0xFFFF8A80, 0xFF7F0013, 0xFFFF80AB, 0xFFFFAB91),
         gradient = listOf(Color(0xFFE60027), Color(0xFFFF5252), Color(0xFFFF8A80)),
-        preview = listOf(Color(0xFFE60027), Color(0xFFFF5252))
+        preview = listOf(Color(0xFFE60027), Color(0xFFFF5252)),
+        bgRes = R.drawable.xz_bg,
+        previewRes = R.drawable.xz_prev,
+        bubbleRes = R.drawable.xz_bubble
     ),
     // ③ 深海蓝：沉稳经典
     WblThemeSpec(

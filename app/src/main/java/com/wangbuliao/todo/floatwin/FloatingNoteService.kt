@@ -15,8 +15,10 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import com.wangbuliao.todo.MainActivity
 import com.wangbuliao.todo.R
@@ -95,6 +97,7 @@ class FloatingNoteService : Service() {
         try {
             val inflater = LayoutInflater.from(this)
             val v = inflater.inflate(R.layout.float_bubble, null)
+            applyBubbleTheme(v)
             val savedX = com.wangbuliao.todo.util.Prefs.floatX
             val savedY = com.wangbuliao.todo.util.Prefs.floatY
             val p = WindowManager.LayoutParams(
@@ -119,6 +122,66 @@ class FloatingNoteService : Service() {
     }
 
     /** 拖动 + 点击（slop 区分）；松手吸附左右边缘 */
+    /** 悬浮球按主题渲染：照片主题=圆形贴图，其余=主题渐变/主色球（修复旧版固定彩虹色） */
+    private fun applyBubbleTheme(v: View) {
+        try {
+            val spec = com.wangbuliao.todo.ui.themeById(
+                com.wangbuliao.todo.util.Prefs.theme.value
+            )
+            val text = v.findViewById<TextView>(R.id.bubble_text)
+            val photo = v.findViewById<ImageView>(R.id.bubble_photo)
+            if (spec.bubbleRes != null) {
+                val size = dp(54)
+                val src = android.graphics.BitmapFactory.decodeResource(resources, spec.bubbleRes)
+                val scaled = android.graphics.Bitmap.createScaledBitmap(src, size, size, true)
+                val out = android.graphics.Bitmap.createBitmap(
+                    size, size, android.graphics.Bitmap.Config.ARGB_8888
+                )
+                val canvas = android.graphics.Canvas(out)
+                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                paint.shader = android.graphics.BitmapShader(
+                    scaled,
+                    android.graphics.Shader.TileMode.CLAMP,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+                canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+                photo.setImageBitmap(out)
+                photo.visibility = View.VISIBLE
+                text.background = null
+            } else {
+                photo.visibility = View.GONE
+                text.background = themedOval(spec)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "applyBubbleTheme failed", e)
+        }
+    }
+
+    /** 主题椭圆背景：阴影层 + 渐变/主色主体（等价 bg_bubble_shadow，但用当前主题色） */
+    private fun themedOval(
+        spec: com.wangbuliao.todo.ui.WblThemeSpec
+    ): android.graphics.drawable.Drawable {
+        val gradColors = if (spec.gradient != null) {
+            spec.gradient.map { it.toArgb() }.toIntArray()
+        } else {
+            val p = spec.light.primary.toArgb()
+            intArrayOf(p, p)
+        }
+        val shadow = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(0x33000000)
+        }
+        val main = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR, gradColors
+        ).apply { shape = android.graphics.drawable.GradientDrawable.OVAL }
+        return android.graphics.drawable.LayerDrawable(
+            arrayOf<android.graphics.drawable.Drawable>(shadow, main)
+        ).apply {
+            setLayerInset(0, dp(1), dp(2), dp(1), 0)
+            setLayerInset(1, dp(1), dp(1), dp(1), dp(2))
+        }
+    }
+
     private fun attachDrag(v: View, p: WindowManager.LayoutParams) {
         val slop = dp(8)
         v.setOnTouchListener(object : View.OnTouchListener {

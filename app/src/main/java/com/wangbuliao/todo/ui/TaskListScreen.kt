@@ -19,14 +19,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Notifications
@@ -72,19 +77,21 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
     var showQuickNote by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
 
+    WblScreenBackground {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            // 主题渐变顶栏（无渐变的主题用 primary 纯色）
-            val bg = spec.gradient
+            // 主题化顶栏：照片主题=深色遮罩，渐变主题=主题渐变，其余=默认纯色
+            val themed = wblTopBarThemed()
             TopAppBar(
                 title = {
                     Text(
                         "忘不了",
-                        color = if (bg != null) Color.White else MaterialTheme.colorScheme.onSurface
+                        color = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
                     )
                 },
                 actions = {
-                    val tint = if (bg != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(Icons.Filled.Search, contentDescription = "搜索", tint = tint)
                     }
@@ -95,18 +102,16 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                         Icon(Icons.Filled.Settings, contentDescription = "设置", tint = tint)
                     }
                 },
-                colors = if (bg == null) {
-                    TopAppBarDefaults.topAppBarColors()
-                } else {
+                colors = if (themed) {
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         titleContentColor = Color.White,
                         actionIconContentColor = Color.White
                     )
+                } else {
+                    TopAppBarDefaults.topAppBarColors()
                 },
-                modifier = if (bg != null) {
-                    Modifier.background(Brush.horizontalGradient(bg))
-                } else Modifier
+                modifier = wblTopBarModifier()
             )
         },
         floatingActionButton = {
@@ -126,6 +131,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     placeholder = { Text("搜索标题 / 内容 / 分类") },
                     singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
                     leadingIcon = { Icon(Icons.Filled.Search, null) },
                     trailingIcon = {
                         if (ui.search.isNotEmpty()) {
@@ -146,13 +152,22 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     FilterChip(
                         selected = ui.status == f,
                         onClick = { vm.setStatus(f) },
-                        label = { Text(f.label) }
+                        label = { Text(f.label) },
+                        leadingIcon = {
+                            Icon(statusIcon(f), null, Modifier.size(16.dp))
+                        }
                     )
                 }
                 FilterChip(
                     selected = ui.urgentOnly,
                     onClick = { vm.toggleUrgentOnly() },
-                    label = { Text("仅紧急") }
+                    label = { Text("仅紧急") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.LocalFireDepartment, null,
+                            Modifier.size(16.dp)
+                        )
+                    }
                 )
             }
             // 分类筛选行
@@ -164,13 +179,19 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                 FilterChip(
                     selected = ui.category == null,
                     onClick = { vm.setCategoryFilter(null) },
-                    label = { Text("全部分类") }
+                    label = { Text("全部分类") },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Category, null, Modifier.size(16.dp))
+                    }
                 )
                 ui.categories.forEach { c ->
                     FilterChip(
                         selected = ui.category == c,
                         onClick = { vm.setCategoryFilter(c) },
-                        label = { Text(c) }
+                        label = { Text(c) },
+                        leadingIcon = {
+                            Icon(categoryIcon(c), null, Modifier.size(16.dp))
+                        }
                     )
                 }
             }
@@ -183,14 +204,22 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     Modifier.weight(1f).fillMaxWidth().padding(bottom = 80.dp),
                     Alignment.Center
                 ) {
-                    Text(
-                        when {
-                            ui.search.isNotBlank() -> "没有匹配「${ui.search.trim()}」的事项"
-                            ui.allTasks.isEmpty() -> "还没有事项，点右下角「记一笔」开始\n顶栏 ✎ 或悬浮球可随手记"
-                            else -> "该筛选条件下没有事项"
-                        },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Outlined.EventNote, null,
+                            Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            when {
+                                ui.search.isNotBlank() -> "没有匹配「${ui.search.trim()}」的事项"
+                                ui.allTasks.isEmpty() -> "还没有事项，点右下角「记一笔」开始\n顶栏 ✎ 或悬浮球可随手记"
+                                else -> "该筛选条件下没有事项"
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 else -> LazyColumn(
                     Modifier.weight(1f).fillMaxWidth(),
@@ -203,6 +232,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                 }
             }
         }
+    }
     }
 
     if (showQuickNote) {
@@ -219,7 +249,16 @@ fun QuickNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("✍ 随手记") },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Outlined.EditNote, null,
+                    Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("随手记")
+            }
+        },
         text = {
             OutlinedTextField(
                 value = text,
@@ -257,10 +296,12 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
         modifier = Modifier.fillMaxWidth(),
         colors = if (highlight) {
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                    alpha = if (wblHasPhotoBg()) 0.78f else 0.62f
+                )
             )
         } else {
-            CardDefaults.cardColors()
+            CardDefaults.cardColors(containerColor = wblCardColor())
         }
     ) {
         Row(

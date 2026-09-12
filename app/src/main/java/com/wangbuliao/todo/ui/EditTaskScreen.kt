@@ -18,13 +18,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -37,6 +44,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -226,15 +234,21 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
         }
     }
 
+    WblScreenBackground {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
+            val themed = wblTopBarThemed()
+            val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
             TopAppBar(
-                title = { Text(if (isNew) "记一笔" else "编辑事项") },
+                title = {
+                    Text(if (isNew) "记一笔" else "编辑事项", color = tint)
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (vm.isDraftDirty()) showDiscardConfirm = true else vm.backList()
                     }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "返回", tint = tint)
                     }
                 },
                 actions = {
@@ -242,11 +256,23 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(
                                 Icons.Outlined.Delete, "删除",
-                                tint = MaterialTheme.colorScheme.error
+                                tint = if (themed) Color.White
+                                else MaterialTheme.colorScheme.error
                             )
                         }
                     }
-                }
+                },
+                colors = if (themed) {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White,
+                        actionIconContentColor = Color.White
+                    )
+                } else {
+                    TopAppBarDefaults.topAppBarColors()
+                },
+                modifier = wblTopBarModifier()
             )
         }
     ) { pad ->
@@ -274,7 +300,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             )
             Spacer(Modifier.height(14.dp))
 
-            Text("分类", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            WblSectionHead("分类", Icons.Outlined.Category, MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(6.dp))
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -284,10 +310,17 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                     FilterChip(
                         selected = draft.category == c,
                         onClick = { vm.updateDraft { it.copy(category = c) } },
-                        label = { Text(c) }
+                        label = { Text(c) },
+                        leadingIcon = {
+                            Icon(categoryIcon(c), null, Modifier.size(16.dp))
+                        }
                     )
                 }
-                OutlinedButton(onClick = { showCatDialog = true }) { Text("＋ 新分类") }
+                OutlinedButton(onClick = { showCatDialog = true }) {
+                    Icon(Icons.Filled.Add, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("新分类")
+                }
             }
             Spacer(Modifier.height(14.dp))
 
@@ -296,7 +329,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("紧急", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    WblSectionHead("紧急", Icons.Outlined.LocalFireDepartment, MaterialTheme.typography.titleSmall)
                     Text(
                         "紧急事项置顶并高亮显示",
                         style = MaterialTheme.typography.bodySmall,
@@ -316,7 +349,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("置顶", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    WblSectionHead("置顶", Icons.Outlined.PushPin, MaterialTheme.typography.titleSmall)
                     Text(
                         "置顶事项固定在待办列表最上方",
                         style = MaterialTheme.typography.bodySmall,
@@ -341,7 +374,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             Spacer(Modifier.height(14.dp))
 
             // ── 图片记事 ──
-            Text("图片", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            WblSectionHead("图片", Icons.Outlined.Image, MaterialTheme.typography.titleSmall)
             Text(
                 "拍照或从相册选择（最多 ${ImageStore.maxImages()} 张）",
                 style = MaterialTheme.typography.bodySmall,
@@ -403,7 +436,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("提醒", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    WblSectionHead("提醒", Icons.Outlined.Notifications, MaterialTheme.typography.titleSmall)
                     Text(
                         if (draft.remindAt > 0) TimeFmt.remind(draft.remindAt)
                         else "到时弹出通知提醒",
@@ -422,14 +455,17 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 }
             }
             Spacer(Modifier.height(24.dp))
-            OutlinedButton(
+            Button(
                 onClick = { vm.saveDraft() },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
+                Icon(Icons.Filled.Check, null, Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(if (isNew) "保存" else "保存修改", style = MaterialTheme.typography.titleMedium)
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
     }
 
     if (showPicker) {

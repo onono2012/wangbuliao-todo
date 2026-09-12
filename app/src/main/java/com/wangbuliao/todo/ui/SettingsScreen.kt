@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,8 +30,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PictureInPictureAlt
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +50,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,7 +62,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -114,15 +127,29 @@ fun SettingsScreen(vm: MainViewModel) {
         }
     }
 
+    WblScreenBackground {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
+            val themed = wblTopBarThemed()
+            val tint = if (themed) Color.White else MaterialTheme.colorScheme.onSurface
             TopAppBar(
-                title = { Text("设置") },
+                title = { Text("设置", color = tint) },
                 navigationIcon = {
                     IconButton(onClick = { vm.backList() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "返回", tint = tint)
                     }
-                }
+                },
+                colors = if (themed) {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    )
+                } else {
+                    TopAppBarDefaults.topAppBarColors()
+                },
+                modifier = wblTopBarModifier()
             )
         }
     ) { pad ->
@@ -133,8 +160,11 @@ fun SettingsScreen(vm: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // ── 主题外观 ──
-            SectionTitle("主题外观")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("主题外观", Icons.Outlined.Palette)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Column(Modifier.padding(14.dp)) {
                     Text(
                         "七套精心配色，含浅色/深色自动适配",
@@ -151,18 +181,22 @@ fun SettingsScreen(vm: MainViewModel) {
                                 .padding(vertical = 6.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // 预览色点
+                            // 预览：照片主题=圆形照片，其他=渐变色点
                             Box(
                                 Modifier.size(34.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        if (spec.preview.size >= 2) {
-                                            Brush.linearGradient(spec.preview)
-                                        } else {
-                                            Brush.linearGradient(
-                                                listOf(spec.preview[0], spec.preview[0])
+                                    .then(
+                                        if (spec.previewRes == null) {
+                                            Modifier.background(
+                                                if (spec.preview.size >= 2) {
+                                                    Brush.linearGradient(spec.preview)
+                                                } else {
+                                                    Brush.linearGradient(
+                                                        listOf(spec.preview[0], spec.preview[0])
+                                                    )
+                                                }
                                             )
-                                        }
+                                        } else Modifier
                                     )
                                     .then(
                                         if (selected) {
@@ -175,6 +209,13 @@ fun SettingsScreen(vm: MainViewModel) {
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
+                                if (spec.previewRes != null) {
+                                    Image(
+                                        painterResource(spec.previewRes), null,
+                                        Modifier.matchParentSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 if (selected) {
                                     Icon(
                                         Icons.Filled.Check, null,
@@ -202,8 +243,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 随手记悬浮窗 ──
-            SectionTitle("随手记悬浮窗")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("随手记悬浮窗", Icons.Outlined.PictureInPictureAlt)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -246,8 +290,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 置顶通知 ──
-            SectionTitle("置顶通知")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("置顶通知", Icons.Outlined.PushPin)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -272,8 +319,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 提醒铃声 ──
-            SectionTitle("提醒铃声")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("提醒铃声", Icons.Outlined.MusicNote)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -313,8 +363,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 在线更新 ──
-            SectionTitle("在线更新")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("在线更新", Icons.Outlined.CloudDownload)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Column(Modifier.padding(14.dp)) {
                     Text(
                         "更新来源：GitHub · ${Updater.REPO_OWNER}/${Updater.REPO_NAME}",
@@ -368,8 +421,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 提醒相关权限 ──
-            SectionTitle("提醒权限")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("提醒权限", Icons.Outlined.VerifiedUser)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Column(Modifier.padding(14.dp)) {
                     // 通知权限
                     val notifGranted = Build.VERSION.SDK_INT < 33 ||
@@ -429,8 +485,11 @@ fun SettingsScreen(vm: MainViewModel) {
             }
 
             // ── 关于 ──
-            SectionTitle("关于")
-            Card(Modifier.fillMaxWidth()) {
+            SectionTitle("关于", Icons.Outlined.Info)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
                 Column(Modifier.padding(14.dp)) {
                     Text("忘不了 · 待办记事本")
                     Text(
@@ -447,11 +506,16 @@ fun SettingsScreen(vm: MainViewModel) {
             }
         }
     }
+    }
 }
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+private fun SectionTitle(text: String, icon: ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(8.dp))
+        Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
 }
 
 /** 当前铃声显示名（null=系统默认通知音，空=静音）；非 Composable，读 Prefs.value */
