@@ -1,17 +1,17 @@
 {
-  "versionCode": 10201,
-  "versionName": "1.2.1",
+  "versionCode": 10202,
+  "versionName": "1.2.2",
   "force": true,
-  "desc": "## 更新内容\n- **智能线路测速**：下载前自动并行测速所有更新线路，优先选择最快线路下载，大幅提升更新速度\n- 多线路更新通道：raw / gh-proxy / ghproxy / jsDelivr 中转 + GitHub API 兜底，单线路失败自动切换\n- 断点续传跨线路共用，sha256 + 文件大小双重校验\n- 123 网盘同步备份分发\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。",
-  "sha256": "bdf4fb2428e19ba734b048d35b232427810950c90b37a7f902a54b7e947fd7e5",
-  "size": 9625857,
-  "fileName": "wbl-v1.2.1-vc10201.apk",
+  "desc": "## 更新内容\n- **智能线路测速**：下载前自动并行测速所有更新线路，优先选择最快线路下载，大幅提升更新速度\n- **防缓存检查**：检查更新自动绕过中转代理旧缓存，确保第一时间发现新版本\n- 多线路更新通道：raw / gh-proxy / ghproxy / jsDelivr 中转 + GitHub API 兜底，单线路失败自动切换\n- 断点续传跨线路共用，sha256 + 文件大小双重校验\n- 123 网盘同步备份分发\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。",
+  "sha256": "1a2c933da8e497a658318304c28c2650aabd253384873d8b6ad5da1ecb8e4de7",
+  "size": 9626013,
+  "fileName": "wbl-v1.2.2-vc10202.apk",
   "routes": [
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/558915435",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.1/wbl-v1.2.1-vc10201.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.1/wbl-v1.2.1-vc10201.apk",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.1/wbl-v1.2.1-vc10201.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.1/wbl-v1.2.1-vc10201.apk"
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/558923332",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.2/wbl-v1.2.2-vc10202.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.2/wbl-v1.2.2-vc10202.apk",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.2/wbl-v1.2.2-vc10202.apk",
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.2.2/wbl-v1.2.2-vc10202.apk"
   ],
-  "publishedAt": "2026-09-12T08:32:18+0000"
+  "publishedAt": "2026-09-12T08:38:07+0000"
 }
