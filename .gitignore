@@ -1,0 +1,30 @@
+# 构建产物
+build/
+.gradle/
+.gradle-tmp/
+app/build/
+*.apk.idsig
+
+# 本地配置
+local.properties
+.idea/
+*.iml
+
+# 签名密钥（绝不入库）
+keystore/
+release/keystore-backup/
+*.keystore
+*.jks
+keystore.properties
+
+# 发布产物（存于 Releases / 网盘，不入 git）
+release/dist/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 诊断/备份/旧APK垃圾（不入库）
+diag.txt
+release/*.apk
+release/*.bak

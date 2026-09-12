@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        maven {
+            url '/opt/maven-repo'
+            metadataSources { gradleMetadata(); mavenPom() }
+        }
+        google()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            url '/opt/maven-repo'
+            metadataSources { gradleMetadata(); mavenPom() }
+        }
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'WangBuLiao'
+include ':app'

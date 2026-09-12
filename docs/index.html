@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>忘不了 — 简洁可靠的待办记事本</title>
+<meta name="description" content="忘不了：Android 待办/记事本。紧急标注、定时提醒、分类管理，本地存储无广告，内置多线路在线更新。">
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #ffffff; --text: #1c2333; --sub: #5a6478;
+    --accent: #4f7cff; --accent2: #7c5cff; --line: #e6e9f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151c; --card: #1b2029; --text: #e8ebf2; --sub: #9aa3b5; --line: #2a3140; }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+  header {
+    text-align: center; padding: 64px 20px 40px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #fff; border-radius: 0 0 28px 28px;
+  }
+  .logo {
+    width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 22px;
+    background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
+    font-size: 44px; backdrop-filter: blur(4px);
+  }
+  h1 { font-size: 30px; letter-spacing: 2px; }
+  .slogan { margin-top: 8px; font-size: 15px; opacity: .92; }
+  .btns { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 26px; border-radius: 999px; font-size: 15px;
+    text-decoration: none; font-weight: 600; transition: transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-main { background: #fff; color: var(--accent); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .btn-ghost { background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.5); }
+  .ver { margin-top: 18px; font-size: 13px; opacity: .88; }
+  section { margin: 36px 0; }
+  h2 { font-size: 20px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px;
+  }
+  .card .ico { font-size: 24px; }
+  .card h3 { font-size: 15px; margin: 8px 0 4px; }
+  .card p { font-size: 13px; color: var(--sub); }
+  .dl-list { list-style: none; }
+  .dl-list li {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .dl-list .tag { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--sub); border: 1px solid var(--line); }
+  .dl-list a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; word-break: break-all; }
+  .note { font-size: 13px; color: var(--sub); margin-top: 10px; }
+  footer {
+    text-align: center; padding: 28px 20px 40px; font-size: 13px; color: var(--sub);
+    border-top: 1px solid var(--line); margin-top: 48px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📝</div>
+  <h1>忘不了</h1>
+  <p class="slogan">简洁可靠的待办记事本 · 重要的事，一件都不会忘</p>
+  <div class="btns">
+    <a class="btn btn-main" href="https://github.com/onono2012/wangbuliao-todo/releases/latest">下载最新版</a>
+    <a class="btn btn-ghost" href="https://github.com/onono2012/wangbuliao-todo">源代码</a>
+  </div>
+  <p class="ver" id="ver">正在获取最新版本信息…</p>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>功能特性</h2>
+    <div class="grid">
+      <div class="card"><div class="ico">✅</div><h3>待办 / 已办</h3><p>添加、编辑、勾选完成，本地数据库持久化，无账号无广告</p></div>
+      <div class="card"><div class="ico">🔥</div><h3>紧急标注</h3><p>紧急事项自动置顶高亮，支持「仅紧急」筛选</p></div>
+      <div class="card"><div class="ico">⏰</div><h3>定时提醒</h3><p>精确闹钟 + 通知提醒，开机自动恢复，过期补发</p></div>
+      <div class="card"><div class="ico">🗂️</div><h3>分类管理</h3><p>工作 / 生活 / 学习预置分类，可自定义新增</p></div>
+      <div class="card"><div class="ico">🌗</div><h3>深浅主题</h3><p>浅色 / 深色 / 跟随系统</p></div>
+      <div class="card"><div class="ico">🚀</div><h3>在线更新</h3><p>多线路自动切换 + 下载前智能测速，断点续传，双重校验</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>下载渠道</h2>
+    <ul class="dl-list">
+      <li><span class="tag">官方</span><a href="https://github.com/onono2012/wangbuliao-todo/releases/latest">GitHub Releases（全部版本）</a></li>
+      <li><span class="tag">加速</span><a id="mirror" href="https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/latest">中转加速直链（gh-proxy）</a></li>
+      <li><span class="tag">备份</span><span style="font-size:14px;color:var(--sub)">123 网盘同步备份（联系发布者获取）</span></li>
+    </ul>
+    <p class="note">安装 APK 需允许「安装未知应用」权限；覆盖升级保留全部数据（同一签名）。要求 Android 8.0 及以上。</p>
+  </section>
+
+  <section>
+    <h2>更新说明</h2>
+    <div class="card">
+      <p style="font-size:14px" id="desc">App 启动时自动检查更新，有新版本将展示更新内容并引导安装。更新通道内置多条中转线路，单线路失败自动切换，并在下载前并行测速选择最快线路。</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>忘不了 wangbuliao-todo · <a href="https://github.com/onono2012/wangbuliao-todo">GitHub</a> · <a href="https://github.com/onono2012/wangbuliao-todo/blob/main/CHANGELOG.md">版本历史</a></p>
+</footer>
+
+<script>
+(function () {
+  var sources = [
+    "https://cdn.jsdelivr.net/gh/onono2012/wangbuliao-todo@main/wbl-update.json",
+    "https://raw.githubusercontent.com/onono2012/wangbuliao-todo/main/wbl-update.json"
+  ];
+  function render(d) {
+    document.getElementById("ver").textContent =
+      "最新版本 v" + d.versionName + " · " + (d.size ? (d.size / 1048576).toFixed(1) + " MB · " : "") +
+      "发布于 " + String(d.publishedAt || "").slice(0, 10);
+    var mirror = document.getElementById("mirror");
+    if (d.fileName && d.versionName) {
+      mirror.href = "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v" +
+        d.versionName + "/" + d.fileName;
+      mirror.textContent = "v" + d.versionName + " 中转加速直链（gh-proxy）";
+    }
+    if (d.desc) {
+      var first = d.desc.split("\n").filter(function (l) { return l.trim().indexOf("-") === 0; }).slice(0, 3);
+      if (first.length) document.getElementById("desc").innerHTML =
+        "<strong>v" + d.versionName + " 更新要点</strong><br>" + first.join("<br>");
+    }
+  }
+  function tryFetch(i) {
+    if (i >= sources.length) {
+      document.getElementById("ver").textContent = "最新版本请见 GitHub Releases";
+      return;
+    }
+    fetch(sources[i] + (sources[i].indexOf("?") < 0 ? "?cb=" : "&cb=") + Date.now())
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(render)
+      .catch(function () { tryFetch(i + 1); });
+  }
+  tryFetch(0);
+})();
+</script>
+
+</body>
+</html>
