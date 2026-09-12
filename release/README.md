@@ -17,7 +17,7 @@
 - routes 顺序：api 资产端点 → gh-proxy → ghproxy.net → ghfast.top → github.com 直链
 - 断点续传（Range）跨线路共用；sha256 + 文件大小双重校验，不符自动删包报错
 - 下载落点：`Android/data/com.wangbuliao.todo/files/Download/wangbuliao_v<版本名>.apk`
-- 123 网盘备份：APK / wbl-update.json / SHA256SUMS.txt 同步存于网盘 WebDAV `/app/` 目录（GitHub 渠道整体不可用时的备份途径）
+- 123 网盘备份：APK / wbl-update.json / SHA256SUMS.txt 同步存于网盘 WebDAV `/app/` 目录（GitHub 渠道整体不可用时的备份途径）；**公开分享页（免登录·不限速）**：https://1811857426.share.123pan.cn/123pan/zzMDVv-KcoJv （官网备份行已挂此链接）
 
 ## ⚠️ 密钥安全（最重要）
 - `keystore/wbl.keystore`（备份 `release/keystore-backup/`）是**唯一签名密钥**，所有版本必须同 keystore 签名，否则用户无法覆盖升级。
