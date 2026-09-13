@@ -268,7 +268,7 @@ class MainActivity : ComponentActivity() {
             }
             if (Prefs.pinNotif.value) PinNotifService.start(ctx)
             else PinNotifService.stop(ctx)
-            if (Prefs.keepAlive.value) KeepAliveService.start(ctx)
+            if (Prefs.keepAlive.value) KeepAliveService.refresh(ctx)
             else KeepAliveService.stop(ctx)
         } catch (e: Exception) {
             android.util.Log.e("WblMain", "syncServices failed", e)

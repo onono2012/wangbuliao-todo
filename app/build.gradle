@@ -11,8 +11,8 @@ android {
         applicationId "com.wangbuliao.todo"
         minSdk 26
         targetSdk 34
-        versionCode 10504
-        versionName '1.5.4'
+        versionCode 10505
+        versionName '1.5.5'
     }
 
     buildFeatures {

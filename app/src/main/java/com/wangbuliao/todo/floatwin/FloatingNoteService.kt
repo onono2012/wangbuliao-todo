@@ -46,6 +46,12 @@ class FloatingNoteService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var panelOpen = false
 
+    // ── v1.5.5 悬浮面板增强：分类 + 定时提醒 ──
+    private var panelCategory = com.wangbuliao.todo.data.Task.QUICK_CATEGORY
+    private var panelRemindAt = 0L
+    private var panelRemindSel = 0        // 选中的提醒 chip 序号
+    private var panelPrimary = 0xFF7C6CF6.toInt()
+
     // ── v1.5.4：10 秒无操作自动贴边（半隐藏 + 变淡，触摸即恢复） ──
     private val dockHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val dockRunnable = Runnable { dockToEdge() }
@@ -128,7 +134,13 @@ class FloatingNoteService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundCompat()
+        updateCountBadge()
+        // v1.5.5 通知去重：悬浮窗运行中，守护通知自动休眠（refresh 内部按开关判断）
+        com.wangbuliao.todo.reminder.KeepAliveService.refresh(this)
+        return START_STICKY
+    }
 
     private fun startForegroundCompat() {
         val open = Intent(this, MainActivity::class.java).apply {
@@ -138,13 +150,17 @@ class FloatingNoteService : Service() {
             this, 8, open,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        // v1.5.5 通知去重：悬浮窗开着时守护通知休眠，本 FGS 通知兼任"后台守护"展示位
+        // （pendingCount<0 = 尚未统计，显示通用文案；onStartCommand 里异步补一次计数）
         val n = NotificationCompat.Builder(this, Notif.CH_FLOAT)
             .setSmallIcon(R.drawable.ic_stat_check)
-            .setContentTitle("随手记悬浮窗运行中")
-            .setContentText("点悬浮球快速记录 · 设置页可关闭")
+            .setContentTitle("🛡️ 忘不了 · 后台守护中")
+            .setContentText("悬浮记事运行中 · 下拉点开悬浮球随手记")
             .setContentIntent(pi)
             .setOngoing(true)
             .setSilent(true)
+            .setShowWhen(false)
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
         try {
@@ -158,6 +174,40 @@ class FloatingNoteService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "startForeground failed", e)
+        }
+    }
+
+    /** v1.5.5：守护通知文案带未完成数（异步统计，失败静默） */
+    private fun updateCountBadge() {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val count = TaskRepo.tasks().count { !it.done }
+                val text = when {
+                    count <= 0 -> "全部办完了 ✨ 点悬浮球记点新东西"
+                    else -> "悬浮记事运行中 · $count 条待办未完成"
+                }
+                val open = Intent(this@FloatingNoteService, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pi = PendingIntent.getActivity(
+                    this@FloatingNoteService, 8, open,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val n = NotificationCompat.Builder(this@FloatingNoteService, Notif.CH_FLOAT)
+                    .setSmallIcon(R.drawable.ic_stat_check)
+                    .setContentTitle("🛡️ 忘不了 · 后台守护中")
+                    .setContentText(text)
+                    .setContentIntent(pi)
+                    .setOngoing(true)
+                    .setSilent(true)
+                    .setShowWhen(false)
+                    .setOnlyAlertOnce(true)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .build()
+                androidx.core.app.NotificationManagerCompat.from(this@FloatingNoteService)
+                    .notify(NOTIF_ID, n)
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -338,6 +388,8 @@ class FloatingNoteService : Service() {
                 val v = LayoutInflater.from(this).inflate(R.layout.float_panel, null)
                 applyPanelTheme(v)
                 wireMediaButtons(v)
+                wireCatChips(v)
+                wireRemindChips(v)
                 val p = WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.WRAP_CONTENT,
@@ -358,13 +410,28 @@ class FloatingNoteService : Service() {
                         return@setOnClickListener
                     }
                     et.setText("")
+                    val cat = panelCategory
+                    val remind = panelRemindAt
                     scope.launch(Dispatchers.IO) {
                         try {
-                            TaskRepo.quickNote(text)
+                            val id = TaskRepo.quickNote(text, category = cat, remindAt = remind)
+                            if (id > 0 && remind > 0) {
+                                TaskRepo.get(id)?.let {
+                                    com.wangbuliao.todo.reminder.AlarmScheduler.schedule(
+                                        applicationContext, it
+                                    )
+                                }
+                            }
                             PinNotifService.refresh(applicationContext)
-com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
+                            com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
                             com.wangbuliao.todo.util.Haptics.quickSaved(applicationContext)
-                            launch(Dispatchers.Main) { toast("已记入「随手记」✍") }
+                            launch(Dispatchers.Main) {
+                                val rt = if (remind > 0)
+                                    " ⏰ " + com.wangbuliao.todo.util.TimeFmt.remind(remind)
+                                else ""
+                                toast("已记入「$cat」✍$rt")
+                                updateCountBadge()
+                            }
                         } catch (e: Exception) {
                             launch(Dispatchers.Main) { toast("保存失败：${e.message}") }
                         }
@@ -411,6 +478,10 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
                 it.findViewById<EditText>(R.id.et_note)?.setText("")
                 it.visibility = View.GONE
             }
+            // v1.5.5：收起面板重置提醒快选（下次打开从「不提醒」开始）
+            panelRemindAt = 0
+            panelRemindSel = 0
+            panelView?.let { restyleChips(it) }
             bubbleView?.visibility = View.VISIBLE
             panelOpen = false
             // 面板收起后重新开始 10 秒无操作计时
@@ -431,6 +502,7 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
             } else {
                 spec.light.primary.toArgb()
             }
+            panelPrimary = primary
             val glass = android.graphics.drawable.GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
                 setColor(0xF2161822.toInt())
@@ -519,7 +591,167 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
             stopForeground(STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {
         }
+        // v1.5.5 通知去重：悬浮窗退出后，守护开关开着则恢复守护通知（接管保活职责）
+        try {
+            com.wangbuliao.todo.reminder.KeepAliveService.refresh(this)
+        } catch (_: Exception) {
+        }
     }
+
+
+    /** v1.5.5 分类 chips：常用分类 + 数据库自定义分类（异步加载） */
+    private fun wireCatChips(v: View) {
+        val box = v.findViewById<android.widget.LinearLayout>(R.id.cat_chips) ?: return
+        box.removeAllViews()
+        val base = listOf(
+            com.wangbuliao.todo.data.Task.QUICK_CATEGORY,
+            com.wangbuliao.todo.data.Task.DEFAULT_CATEGORY,
+            "生活", "学习", "其他"
+        )
+        fun render(cats: List<String>) {
+            box.removeAllViews()
+            cats.distinct().forEach { name ->
+                box.addView(makeChip(name) {
+                    panelCategory = name
+                    restyleChips(v)
+                })
+            }
+            restyleChips(v)
+        }
+        render(base)
+        scope.launch(Dispatchers.IO) {
+            val dbCats = try { TaskRepo.categories() } catch (_: Exception) { emptyList() }
+            launch(Dispatchers.Main) {
+                val merged = base + dbCats
+                if (panelCategory !in merged) panelCategory = base.first()
+                render(merged)
+            }
+        }
+    }
+
+    /** v1.5.5 提醒快选 chips：不提醒/1小时后/3小时后/今晚21点/明早9点/自定义 */
+    private fun wireRemindChips(v: View) {
+        val box = v.findViewById<android.widget.LinearLayout>(R.id.remind_chips) ?: return
+        box.removeAllViews()
+        val labels = listOf("⏰ 不提醒", "1小时后", "3小时后", "今晚21点", "明早9点", "自定义")
+        labels.forEachIndexed { i, label ->
+            val chip = makeChip(label) {
+                when (i) {
+                    0 -> panelRemindAt = 0
+                    1 -> panelRemindAt = com.wangbuliao.todo.ui.RemindPreset.hourLater(1)
+                    2 -> panelRemindAt = com.wangbuliao.todo.ui.RemindPreset.hourLater(3)
+                    3 -> panelRemindAt = com.wangbuliao.todo.ui.RemindPreset.tonight(21)
+                    4 -> panelRemindAt = com.wangbuliao.todo.ui.RemindPreset.tomorrow(9)
+                    5 -> { pickRemindTime(v); return@makeChip }
+                }
+                panelRemindSel = i
+                restyleChips(v)
+            }
+            chip.tag = i
+            box.addView(chip)
+        }
+        restyleChips(v)
+    }
+
+    /** 自定义提醒时间：传统 TimePickerDialog（overlay 窗口类型），过点自动顺延到明天 */
+    private fun pickRemindTime(v: View) {
+        try {
+            val now = java.util.Calendar.getInstance()
+            val dlg = android.app.TimePickerDialog(
+                this,
+                { _, hh, mm ->
+                    val c = java.util.Calendar.getInstance().apply {
+                        set(java.util.Calendar.HOUR_OF_DAY, hh)
+                        set(java.util.Calendar.MINUTE, mm)
+                        set(java.util.Calendar.SECOND, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                    }
+                    if (c.timeInMillis <= System.currentTimeMillis()) {
+                        c.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                    }
+                    panelRemindAt = c.timeInMillis
+                    panelRemindSel = -1   // 自定义不对应任何预设 chip
+                    restyleChips(v)
+                },
+                now.get(java.util.Calendar.HOUR_OF_DAY),
+                now.get(java.util.Calendar.MINUTE),
+                true
+            )
+            dlg.window?.setType(overlayType())
+            dlg.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "pickRemindTime failed", e)
+            toast("无法打开时间选择器")
+        }
+    }
+
+    private fun makeChip(label: String, onClick: () -> Unit): TextView {
+        val t = TextView(this)
+        t.text = label
+        t.textSize = 12f
+        t.setTextColor(0xFFFFFFFF.toInt())
+        t.gravity = Gravity.CENTER
+        t.setPadding(dp(12), dp(7), dp(12), dp(7))
+        t.isSingleLine = true
+        val lp = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        lp.marginEnd = dp(6)
+        t.layoutParams = lp
+        t.setOnClickListener { onClick() }
+        return t
+    }
+
+    /** chips 重上色：分类按文本、提醒按序号匹配选中态 */
+    private fun restyleChips(v: View) {
+        try {
+            val ghost = chipBg(false)
+            val solid = chipBg(true)
+            val lum = (android.graphics.Color.red(panelPrimary) * 299 +
+                android.graphics.Color.green(panelPrimary) * 587 +
+                android.graphics.Color.blue(panelPrimary) * 114) / 1000
+            val solidText = if (lum > 150) 0xFF101010.toInt() else 0xFFFFFFFF.toInt()
+            v.findViewById<android.widget.LinearLayout>(R.id.cat_chips)?.let { box ->
+                for (i in 0 until box.childCount) {
+                    val c = box.getChildAt(i) as TextView
+                    val sel = c.text.toString() == panelCategory
+                    c.background = if (sel) chipBg(true) else ghost
+                    c.setTextColor(if (sel) solidText else 0xFFFFFFFF.toInt())
+                }
+            }
+            v.findViewById<android.widget.LinearLayout>(R.id.remind_chips)?.let { box ->
+                for (i in 0 until box.childCount) {
+                    val c = box.getChildAt(i) as TextView
+                    val sel = panelRemindSel >= 0 && (c.tag as? Int) == panelRemindSel
+                    c.background = if (sel) chipBg(true) else ghost
+                    c.setTextColor(if (sel) solidText else 0xFFFFFFFF.toInt())
+                }
+            }
+            // 选中提醒后展示具体时间
+            v.findViewById<TextView>(R.id.remind_status)?.let { st ->
+                if (panelRemindAt > 0) {
+                    st.text = "⏰ " + com.wangbuliao.todo.util.TimeFmt.remind(panelRemindAt) + " 提醒"
+                    st.visibility = View.VISIBLE
+                } else {
+                    st.visibility = View.GONE
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "restyleChips failed", e)
+        }
+    }
+
+    private fun chipBg(selected: Boolean): android.graphics.drawable.GradientDrawable =
+        android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = dp(14).toFloat()
+            if (selected) {
+                setColor(panelPrimary)
+            } else {
+                setColor(0x1AFFFFFF)
+                setStroke(dp(1), 0x33FFFFFF)
+            }
+        }
 
     companion object {
         private const val TAG = "WblFloat"

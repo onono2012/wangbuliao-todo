@@ -110,11 +110,15 @@ object TaskRepo {
         ).also { widgetRefresh() }
     }
 
+    /** v1.5.5 快速记录：category=空则用「随手记」；remindAt>0 同时排闹钟 */
     suspend fun quickNote(
         text: String,
         audioPath: String = "",
         audioDur: Long = 0,
-        images: List<String> = emptyList()
+        images: List<String> = emptyList(),
+        category: String = "",
+        remindAt: Long = 0,
+        urgent: Boolean = false
     ): Long = withContext(Dispatchers.IO) {
         val trimmed = text.trim()
         // 无文字但有附件时也允许保存（标题回退）
@@ -125,13 +129,16 @@ object TaskRepo {
                 else -> "随手记"
             }
         val title = if (firstLine.length > 30) firstLine.take(30) + "…" else firstLine
-        db.addCategory(Task.QUICK_CATEGORY)
+        val cat = category.ifBlank { Task.QUICK_CATEGORY }
+        db.addCategory(cat)
         val now = System.currentTimeMillis()
         db.insert(
             Task(
                 title = title,
                 note = trimmed,
-                category = Task.QUICK_CATEGORY,
+                category = cat,
+                urgent = urgent,
+                remindAt = remindAt,
                 createdAt = now,
                 updatedAt = now,
                 audioPath = audioPath,

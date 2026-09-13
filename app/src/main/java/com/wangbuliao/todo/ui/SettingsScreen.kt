@@ -324,7 +324,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             checked = keepAlive,
                             onCheckedChange = { on ->
                                 Prefs.setKeepAlive(on)
-                                if (on) KeepAliveService.start(ctx) else KeepAliveService.stop(ctx)
+                                if (on) KeepAliveService.refresh(ctx) else KeepAliveService.stop(ctx)
                             }
                         )
                     }

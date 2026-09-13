@@ -80,6 +80,7 @@ import com.wangbuliao.todo.util.TimeFmt
 fun TaskListScreen(vm: MainViewModel, ui: UiState) {
     val spec = LocalWblTheme.current
     var showQuickNote by remember { mutableStateOf(false) }
+    var showQuickSheet by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
 
     WblScreenBackground {
@@ -151,7 +152,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { vm.openNew() },
+                onClick = { showQuickSheet = true },
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text("记一笔") }
             )
@@ -331,6 +332,16 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
         QuickNoteDialog(
             onDismiss = { showQuickNote = false },
             onSave = { vm.quickNote(it) }
+        )
+    }
+
+    // v1.5.5 记一笔下拉快速面板：内容+分类+提醒+媒体一屏搞定
+    if (showQuickSheet) {
+        QuickNoteSheet(
+            vm = vm,
+            categories = ui.categories,
+            onDismiss = { showQuickSheet = false },
+            onMore = { showQuickSheet = false; vm.openNew() }
         )
     }
 }

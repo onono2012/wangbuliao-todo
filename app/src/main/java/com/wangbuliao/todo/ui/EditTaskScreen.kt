@@ -82,7 +82,7 @@ import java.util.Locale
  *  日期=未来90天横滑；小时/分钟=横滑芯片 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RemindPickerDialog(
+fun RemindPickerDialog(
     initial: Long,
     onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit
@@ -127,6 +127,32 @@ private fun RemindPickerDialog(
         title = { Text("选择提醒时间") },
         text = {
             Column {
+                // v1.5.5 快捷预设：一键选中常用提醒时间（不直观问题 → 直接给结果）
+                Text("快捷", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    fun applyPreset(ts: Long) {
+                        val c = Calendar.getInstance().apply { timeInMillis = ts }
+                        dayOffset = ((ts - today.timeInMillis) / 86400000L).toInt().coerceIn(0, 89)
+                        hour = c.get(Calendar.HOUR_OF_DAY)
+                        minute = c.get(Calendar.MINUTE) / 5 * 5
+                    }
+                    FilterChip(colors = wblChipColors(), selected = false,
+                        onClick = { applyPreset(RemindPreset.hourLater(1)) },
+                        label = { Text("1小时后") })
+                    FilterChip(colors = wblChipColors(), selected = false,
+                        onClick = { applyPreset(RemindPreset.hourLater(3)) },
+                        label = { Text("3小时后") })
+                    FilterChip(colors = wblChipColors(), selected = false,
+                        onClick = { applyPreset(RemindPreset.tonight(21)) },
+                        label = { Text("今晚21点") })
+                    FilterChip(colors = wblChipColors(), selected = false,
+                        onClick = { applyPreset(RemindPreset.tomorrow(9)) },
+                        label = { Text("明早9点") })
+                }
+                Spacer(Modifier.height(10.dp))
                 Text("日期", style = MaterialTheme.typography.labelLarge)
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

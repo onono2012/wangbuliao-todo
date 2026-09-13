@@ -164,9 +164,20 @@ class KeepAliveService : Service() {
             }
         }
 
-        /** 数据变化后刷新状态通知（仅在服务运行时有效） */
+        /** 数据变化后刷新状态通知（仅在服务运行时有效）。
+         *  v1.5.5 通知去重：悬浮窗开着时其前台服务已承担保活（同为 START_STICKY），
+         *  守护通知自动休眠——同一时刻最多一条"服务类"通知，避免通知栏刷屏。 */
         fun refresh(ctx: Context) {
-            if (com.wangbuliao.todo.util.Prefs.keepAlive.value) start(ctx)
+            val floatOn = try {
+                com.wangbuliao.todo.util.Prefs.floatEnabled.value
+            } catch (_: Exception) {
+                false
+            }
+            if (floatOn) {
+                stop(ctx)
+            } else if (com.wangbuliao.todo.util.Prefs.keepAlive.value) {
+                start(ctx)
+            }
         }
     }
 }

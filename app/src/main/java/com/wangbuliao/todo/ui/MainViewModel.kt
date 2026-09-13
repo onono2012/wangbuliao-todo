@@ -7,6 +7,7 @@ import com.wangbuliao.todo.data.Task
 import com.wangbuliao.todo.data.TaskRepo
 import com.wangbuliao.todo.media.ImageStore
 import com.wangbuliao.todo.reminder.AlarmScheduler
+import com.wangbuliao.todo.reminder.KeepAliveService
 import com.wangbuliao.todo.reminder.PinNotifService
 import com.wangbuliao.todo.update.Updater
 import com.wangbuliao.todo.util.RepeatRule
@@ -321,10 +322,53 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 TaskRepo.quickNote(t)
                 refresh()
                 PinNotifService.refresh(ctx)
-com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
+                KeepAliveService.refresh(ctx)
                 _msg.value = "已记入「随手记」✍"
             } catch (e: Exception) {
                 _msg.value = "保存失败：${e.message}"
+            }
+        }
+    }
+
+    /**
+     * v1.5.5 记一笔快速面板：分类/媒体/提醒一步到位。
+     * remindAt>0 时自动排闹钟；成功后刷新通知与列表。
+     */
+    fun quickCreate(
+        text: String,
+        category: String,
+        urgent: Boolean,
+        remindAt: Long,
+        images: List<String> = emptyList(),
+        audioPath: String = "",
+        audioDur: Long = 0,
+        onDone: (Boolean) -> Unit = {}
+    ) {
+        val t = text.trim()
+        val hasMedia = images.isNotEmpty() || audioPath.isNotEmpty()
+        if (t.isEmpty() && !hasMedia) {
+            _msg.value = "先写点内容吧"
+            onDone(false)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                TaskRepo.quickNote(
+                    t, audioPath = audioPath, audioDur = audioDur, images = images,
+                    category = category, remindAt = remindAt, urgent = urgent
+                ).also { id ->
+                    if (id > 0 && remindAt > 0) {
+                        TaskRepo.get(id)?.let { AlarmScheduler.schedule(ctx, it) }
+                    }
+                }
+                refresh()
+                PinNotifService.refresh(ctx)
+                KeepAliveService.refresh(ctx)
+                _msg.value = "已记录 ✓"
+                onDone(true)
+            } catch (e: Exception) {
+                _msg.value = "保存失败：${e.message}"
+                onDone(false)
             }
         }
     }
