@@ -23,6 +23,23 @@ object Prefs {
         _theme.value = id
     }
 
+    // ── WebDAV 备份配置（用户自行填写，仅存本机）──
+    private val _davUrl = MutableStateFlow(sp.getString("dav_url", "").orEmpty())
+    val davUrl: StateFlow<String> = _davUrl
+    private val _davUser = MutableStateFlow(sp.getString("dav_user", "").orEmpty())
+    val davUser: StateFlow<String> = _davUser
+    private var davPassCache: String = sp.getString("dav_pass", "").orEmpty()
+
+    fun setDavConfig(url: String, user: String, pass: String) {
+        sp.edit().putString("dav_url", url.trim())
+            .putString("dav_user", user.trim())
+            .putString("dav_pass", pass).apply()
+        _davUrl.value = url.trim(); _davUser.value = user.trim(); davPassCache = pass
+    }
+    fun davPass(): String = davPassCache
+    fun davConfigured(): Boolean =
+        _davUrl.value.isNotEmpty() && _davUser.value.isNotEmpty() && davPassCache.isNotEmpty()
+
     // ── 悬浮窗 ──
     private val _floatEnabled = MutableStateFlow(false)
     val floatEnabled: StateFlow<Boolean> = _floatEnabled

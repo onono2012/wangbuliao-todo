@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Info
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureInPictureAlt
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,6 +54,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -390,6 +394,104 @@ fun SettingsScreen(vm: MainViewModel) {
                             Notif.ensureChannels(ctx)  // 渠道 id 含震动标志，重建生效
                         }
                     )
+                }
+            }
+
+            // ── 数据备份 ──
+            SectionTitle("数据备份", Icons.Outlined.Backup)
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+            ) {
+                Column(Modifier.padding(14.dp)) {
+                    val bk by vm.backup.collectAsState()
+                    var davUrl by remember { mutableStateOf(Prefs.davUrl.value) }
+                    var davUser by remember { mutableStateOf(Prefs.davUser.value) }
+                    var davPass by remember { mutableStateOf(Prefs.davPass()) }
+                    var showCfg by remember { mutableStateOf(!Prefs.davConfigured()) }
+                    var showRestoreConfirm by remember { mutableStateOf(false) }
+                    Text(
+                        "备份内容：任务数据 + 自定义照片主题；通道：自备 WebDAV（坚果云/群晖/自建等），账号密码仅存本机",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "恢复前会自动把当前数据本地兜底备份（files/pre_restore/）",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    if (showCfg) {
+                        OutlinedTextField(
+                            value = davUrl, onValueChange = { davUrl = it },
+                            label = { Text("WebDAV 服务器地址") },
+                            placeholder = { Text("https://dav.jianguoyun.com/dav/") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = davUser, onValueChange = { davUser = it },
+                            label = { Text("账号") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = davPass, onValueChange = { davPass = it },
+                            label = { Text("密码 / 应用密码") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                Prefs.setDavConfig(davUrl, davUser, davPass)
+                                showCfg = false
+                            }, enabled = davUrl.isNotBlank() && davUser.isNotBlank() && davPass.isNotBlank()) {
+                                Text("保存配置")
+                            }
+                            if (Prefs.davConfigured()) {
+                                TextButton(onClick = { showCfg = false }) { Text("取消") }
+                            }
+                        }
+                    } else {
+                        Text(
+                            "服务器：${Prefs.davUrl.value.trimEnd('/')}",
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { vm.doBackup() }, enabled = !bk.busy) {
+                                Text(if (bk.busy) "处理中…" else "备份到 WebDAV")
+                            }
+                            OutlinedButton(onClick = { showRestoreConfirm = true }, enabled = !bk.busy) {
+                                Text("从 WebDAV 恢复")
+                            }
+                        }
+                        if (showRestoreConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showRestoreConfirm = false },
+                                title = { Text("从 WebDAV 恢复") },
+                                text = { Text("将用云端备份覆盖当前全部任务数据与照片主题，完成后应用自动重启。\n\n当前数据会先在本地兜底备份（files/pre_restore/）。确定继续？") },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        showRestoreConfirm = false
+                                        vm.doRestore()
+                                    }) { Text("恢复") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showRestoreConfirm = false }) { Text("取消") }
+                                }
+                            )
+                        }
+                        TextButton(onClick = { showCfg = true }) { Text("修改服务器配置") }
+                    }
+                    bk.message?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
 

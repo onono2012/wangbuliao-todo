@@ -92,6 +92,12 @@ data class UiState(
         }
 }
 
+/** 数据备份/恢复 UI 状态 */
+data class BackupUiState(
+    val busy: Boolean = false,
+    val message: String? = null
+)
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val ctx = app.applicationContext
 
@@ -112,6 +118,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun consumeMsg() {
         _msg.value = null
+    }
+
+    // ── 数据备份/恢复（123 网盘 WebDAV，手动触发）──
+    private val _backup = MutableStateFlow(BackupUiState())
+    val backup: StateFlow<BackupUiState> = _backup.asStateFlow()
+
+    fun doBackup() {
+        if (_backup.value.busy) return
+        _backup.value = BackupUiState(busy = true, message = "备份中…")
+        viewModelScope.launch {
+            val r = com.wangbuliao.todo.util.BackupManager.backup(ctx)
+            _backup.value = BackupUiState(busy = false, message = r)
+        }
+    }
+
+    fun doRestore() {
+        if (_backup.value.busy) return
+        _backup.value = BackupUiState(busy = true, message = "恢复中…完成后应用将重启")
+        viewModelScope.launch {
+            val r = com.wangbuliao.todo.util.BackupManager.restore(ctx)
+            _backup.value = BackupUiState(busy = false, message = r)
+        }
     }
 
     /** 供 UI 组件上抛一次性提示（如权限被拒、图片超限） */

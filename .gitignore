@@ -32,3 +32,9 @@ release/*.bak
 # 隔离gradle缓存与推送日志
 .gradle-home/
 .push_apk.log
+
+# 数据快照（含真机用户数据，仅本地归档，绝不入库）
+release/snapshots/
+
+# Python 缓存
+__pycache__/
