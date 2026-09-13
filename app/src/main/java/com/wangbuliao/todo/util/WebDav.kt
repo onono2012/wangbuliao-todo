@@ -7,8 +7,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 极简 WebDAV 客户端（PUT/GET），用于数据备份/恢复。
- * 复用 publish.py 的 123 网盘 WebDAV 通道（地址/账号经 BuildConfig 注入，同源配置）。
+ * 极简 WebDAV 客户端（PUT/GET），用于数据备份/恢复与崩溃日志上报。
+ * 服务器地址/账号/密码全部来自用户在设置页录入的 Prefs（dav_url/dav_user/dav_pass），
+ * 应用内零硬编码凭据，兼容任意标准 WebDAV 服务（123 网盘/坚果云/Nextcloud 等）。
  */
 object WebDav {
 

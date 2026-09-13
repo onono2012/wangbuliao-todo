@@ -126,6 +126,13 @@ object Updater {
         _state.value = State(checking = true, found = _state.value.found)
         val app = ctx.applicationContext
         scope.launch {
+            // 顺带上报崩溃日志（已配置 WebDAV 才生效，失败静默不影响检查更新）
+            launch {
+                try {
+                    com.wangbuliao.todo.util.CrashReporter.uploadPending(app)
+                } catch (_: Exception) {
+                }
+            }
             val routes = orderedCheckRoutes(app)
             var lastEx: Exception? = null
             for ((idx, route) in routes.withIndex()) {

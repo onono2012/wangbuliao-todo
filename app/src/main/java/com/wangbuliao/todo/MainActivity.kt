@@ -51,7 +51,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,6 +63,7 @@ import com.wangbuliao.todo.reminder.AlarmScheduler
 import com.wangbuliao.todo.reminder.Notif
 import com.wangbuliao.todo.reminder.PinNotifService
 import com.wangbuliao.todo.reminder.KeepAliveService
+import com.wangbuliao.todo.util.CrashReporter
 import com.wangbuliao.todo.util.Prefs
 import com.wangbuliao.todo.ui.CalendarScreen
 import com.wangbuliao.todo.ui.EditTaskScreen
@@ -73,6 +76,8 @@ import com.wangbuliao.todo.ui.WblTheme
 import com.wangbuliao.todo.ui.wblCardColor
 import com.wangbuliao.todo.update.Updater
 import kotlinx.coroutines.CoroutineScope
+import java.io.File
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -195,6 +200,7 @@ class MainActivity : ComponentActivity() {
                     }
                     SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
                     UpdateDialog()
+                    CrashReportDialog()
                 }
             }
         }
@@ -344,6 +350,72 @@ private fun UpdateDialog() {
             if (!info.force) {
                 TextButton(onClick = { Updater.dismissFound() }) { Text("以后再说") }
             }
+        }
+    )
+}
+
+/**
+ * 崩溃提示对话框（阶段5）：上次运行发生过未处理异常时，启动后弹一次，
+ * 展示时间/版本/异常摘要；可复制完整日志（粘贴反馈给开发者），
+ * 「知道了」后同一份崩溃不再提示（日志保留，检查更新时顺带上报 WebDAV）。
+ */
+@Composable
+private fun CrashReportDialog() {
+    val ctx = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    var file by remember { mutableStateOf<File?>(null) }
+    var text by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val f = CrashReporter.unshownLatest(ctx) ?: return@withContext
+            val t = try {
+                f.readText().take(1200)
+            } catch (_: Exception) {
+                ""
+            }
+            withContext(Dispatchers.Main) {
+                file = f
+                text = t
+            }
+        }
+    }
+
+    val f = file ?: return
+    AlertDialog(
+        onDismissRequest = { CrashReporter.markShown(ctx, f); file = null },
+        title = { Text("上次运行发生异常") },
+        text = {
+            Column(
+                Modifier
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    "应用上次运行时崩溃了一次。日志不含任务内容，可复制反馈给开发者；" +
+                        "若已配置 WebDAV，检查更新时会自动顺带上报。",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                clipboard.setText(AnnotatedString(text))
+                CrashReporter.markShown(ctx, f)
+                file = null
+            }) { Text("复制日志") }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                CrashReporter.markShown(ctx, f)
+                file = null
+            }) { Text("知道了") }
         }
     )
 }
