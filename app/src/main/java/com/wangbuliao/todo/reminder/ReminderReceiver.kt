@@ -41,12 +41,14 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(app)
             }
             ACTION_SNOOZE -> {
                 val pending = goAsync()
+                // 稍后提醒：通知动作携带 snooze_min（5/10 分钟），默认 10
+                val snoozeMin = intent.getIntExtra("snooze_min", 10).coerceIn(1, 120)
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         if (taskId > 0) {
                             val t = TaskRepo.get(taskId)
                             if (t != null) {
-                                val at = System.currentTimeMillis() + 10 * 60 * 1000L
+                                val at = System.currentTimeMillis() + snoozeMin * 60 * 1000L
                                 TaskRepo.setRemindAt(taskId, at)
                                 AlarmScheduler.schedule(app, t.copy(remindAt = at))
                             }

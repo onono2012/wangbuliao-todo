@@ -8,6 +8,7 @@ import android.widget.RemoteViewsService
 import com.wangbuliao.todo.R
 import com.wangbuliao.todo.data.DbHelper
 import com.wangbuliao.todo.data.Task
+import com.wangbuliao.todo.util.RepeatRule
 import com.wangbuliao.todo.util.TimeFmt
 
 /**
@@ -60,6 +61,9 @@ class WblWidgetService : RemoteViewsService() {
                 if (t.remindAt > 0) {
                     if (isNotEmpty()) append(" · ")
                     append(TimeFmt.remind(t.remindAt))
+                    // 重复任务附周期标签
+                    val rl = RepeatRule.label(t.repeat)
+                    if (rl.isNotEmpty()) append(" · $rl")
                 }
             }
             if (sub.isEmpty()) {

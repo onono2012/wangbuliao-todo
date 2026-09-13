@@ -9,6 +9,8 @@ import com.wangbuliao.todo.media.ImageStore
 import com.wangbuliao.todo.reminder.AlarmScheduler
 import com.wangbuliao.todo.reminder.PinNotifService
 import com.wangbuliao.todo.update.Updater
+import com.wangbuliao.todo.util.RepeatRule
+import com.wangbuliao.todo.util.TimeFmt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +41,8 @@ data class EditDraft(
     val pinned: Boolean = false,
     val audioPath: String = "",
     val audioDur: Long = 0,
-    val images: List<String> = emptyList()
+    val images: List<String> = emptyList(),
+    val repeat: Int = 0
 )
 
 data class UiState(
@@ -190,7 +193,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _draft.value = t?.let {
                 EditDraft(
                     it.id, it.title, it.note, it.category, it.urgent, it.remindAt, it.done,
-                    it.pinned, it.audioPath, it.audioDur, it.images
+                    it.pinned, it.audioPath, it.audioDur, it.images, it.repeat
                 )
             } ?: EditDraft()
             draftOriginal = _draft.value
@@ -329,7 +332,8 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
                     pinned = d.pinned,
                     audioPath = d.audioPath,
                     audioDur = d.audioDur,
-                    images = d.images
+                    images = d.images,
+                    repeat = if (d.remindAt > 0) d.repeat else 0
                 )
                 TaskRepo.save(task)
                 // 保存成功后差量清理：删除编辑期间被移除的原任务附件文件
@@ -355,15 +359,14 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(ctx)
         viewModelScope.launch {
             try {
                 val nd = !t.done
-                TaskRepo.setDone(t.id, nd)
-                val nt = t.copy(done = nd, updatedAt = System.currentTimeMillis())
-                if (nd || nt.remindAt <= 0) {
-                    AlarmScheduler.cancel(ctx, nt)
-                } else {
-                    AlarmScheduler.schedule(ctx, nt)
-                }
+                // 重复任务勾选完成会自动滚动到下一周期（TaskRepo 统一处理闹钟，勿在此 cancel）
+                val rolled = TaskRepo.setDone(t.id, nd)
                 // 震动反馈（受设置-震动开关控制）+ 明确提示去向
-                if (nd) {
+                if (rolled != null) {
+                    com.wangbuliao.todo.util.Haptics.taskDone(ctx)
+                    _msg.value = "「${t.title.ifEmpty { "未命名" }}」本期完成 ✓ " +
+                        RepeatRule.label(t.repeat) + " " + TimeFmt.remind(rolled.remindAt) + " 再次提醒"
+                } else if (nd) {
                     com.wangbuliao.todo.util.Haptics.taskDone(ctx)
                     _msg.value = "已完成「${t.title.ifEmpty { "未命名" }}」✓ 移入已办"
                 } else {

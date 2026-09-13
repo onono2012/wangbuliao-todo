@@ -26,6 +26,10 @@ class DbHelper private constructor(context: Context) :
                 safeExec(db, "ALTER TABLE tasks ADD COLUMN audio_dur INTEGER NOT NULL DEFAULT 0")
                 safeExec(db, "ALTER TABLE tasks ADD COLUMN images TEXT NOT NULL DEFAULT ''")
             }
+            if (oldVersion < 3) {
+                // v3: 重复任务（0=不重复 1=每天 2=每周 3=每月）
+                safeExec(db, "ALTER TABLE tasks ADD COLUMN repeat INTEGER NOT NULL DEFAULT 0")
+            }
             db.execSQL(CREATE_TASKS)
             db.execSQL(CREATE_CATEGORIES)
             presetCategories(db)
@@ -97,6 +101,17 @@ class DbHelper private constructor(context: Context) :
         return writableDatabase.update("tasks", v, "id=?", arrayOf(id.toString()))
     }
 
+    /** 重复任务完成本期：不进已办，提醒时间滚动到下一周期并清除已提醒标记 */
+    fun rollRepeat(id: Long, nextRemindAt: Long, now: Long): Int {
+        val v = ContentValues().apply {
+            put("done", 0)
+            put("remind_at", nextRemindAt)
+            put("reminded", 0)
+            put("updated_at", now)
+        }
+        return writableDatabase.update("tasks", v, "id=?", arrayOf(id.toString()))
+    }
+
     fun pendingReminders(): List<Task> = queryTasks().filter { !it.done && it.remindAt > 0 }
 
     fun pendingCount(): Int = queryTasks().count { !it.done }
@@ -134,7 +149,8 @@ class DbHelper private constructor(context: Context) :
         pinned = colInt("pinned") == 1,
         audioPath = colStr("audio_path"),
         audioDur = colLong("audio_dur"),
-        images = colStr("images").split("\n").filter { it.isNotBlank() }
+        images = colStr("images").split("\n").filter { it.isNotBlank() },
+        repeat = colInt("repeat")
     )
 
     /** 兼容读取：列不存在（极端降级场景）返回默认值，严禁闪退 */
@@ -176,12 +192,13 @@ class DbHelper private constructor(context: Context) :
         put("audio_path", audioPath)
         put("audio_dur", audioDur)
         put("images", images.joinToString("\n"))
+        put("repeat", repeat)
     }
 
     companion object {
         private const val TAG = "WblDb"
         private const val DB_NAME = "wbl.db"
-        private const val DB_VERSION = 2
+        private const val DB_VERSION = 3
         val PRESET = listOf("工作", "生活", "学习", Task.QUICK_CATEGORY, "其他")
 
         private const val CREATE_TASKS = """CREATE TABLE IF NOT EXISTS tasks(
@@ -198,7 +215,8 @@ class DbHelper private constructor(context: Context) :
             pinned INTEGER NOT NULL DEFAULT 0,
             audio_path TEXT NOT NULL DEFAULT '',
             audio_dur INTEGER NOT NULL DEFAULT 0,
-            images TEXT NOT NULL DEFAULT '')"""
+            images TEXT NOT NULL DEFAULT '',
+            repeat INTEGER NOT NULL DEFAULT 0)"""
 
         private const val CREATE_CATEGORIES = """CREATE TABLE IF NOT EXISTS categories(
             name TEXT PRIMARY KEY,

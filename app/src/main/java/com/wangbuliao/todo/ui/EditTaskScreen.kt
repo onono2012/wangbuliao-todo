@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +68,7 @@ import androidx.core.content.FileProvider
 import com.wangbuliao.todo.media.AudioSection
 import com.wangbuliao.todo.media.ImageStore
 import com.wangbuliao.todo.media.Thumb
+import com.wangbuliao.todo.util.RepeatRule
 import com.wangbuliao.todo.util.TimeFmt
 import java.io.File
 import java.text.SimpleDateFormat
@@ -451,8 +453,31 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 }
                 if (draft.remindAt > 0) {
                     Spacer(Modifier.padding(start = 6.dp))
-                    TextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0) } }) {
+                    TextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0, repeat = 0) } }) {
                         Text("清除", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+            // ── 重复（仅设置了提醒时间时可选）：每天/每周/每月，完成本期后自动滚动到下一期 ──
+            if (draft.remindAt > 0) {
+                Spacer(Modifier.height(10.dp))
+                WblSectionHead("重复", Icons.Outlined.Refresh, MaterialTheme.typography.titleSmall)
+                Text(
+                    "勾选完成后自动滚动到下一周期，保持待办",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    RepeatRule.OPTIONS.forEach { (v, label) ->
+                        FilterChip(
+                            selected = draft.repeat == v,
+                            onClick = { vm.updateDraft { it.copy(repeat = v) } },
+                            label = { Text(label) }
+                        )
                     }
                 }
             }

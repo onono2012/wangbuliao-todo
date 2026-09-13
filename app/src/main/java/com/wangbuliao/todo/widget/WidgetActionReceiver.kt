@@ -3,13 +3,17 @@ package com.wangbuliao.todo.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.wangbuliao.todo.data.DbHelper
+import com.wangbuliao.todo.data.TaskRepo
 import com.wangbuliao.todo.reminder.KeepAliveService
 import com.wangbuliao.todo.reminder.PinNotifService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * 小组件勾选广播：切换任务已办状态，随后刷新小组件与常驻通知。
- * 数据库操作走 goAsync + 子线程，避免阻塞广播队列。
+ * 走 TaskRepo.setDone 以保证与应用内/通知栏行为一致——重复任务会自动
+ * 滚动到下一周期并重排闹钟，而不是简单置为已办。
  */
 class WidgetActionReceiver : BroadcastReceiver() {
 
@@ -19,14 +23,10 @@ class WidgetActionReceiver : BroadcastReceiver() {
         if (id <= 0L) return
         val app = ctx.applicationContext
         val async = goAsync()
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                val db = DbHelper.get(app)
-                val t = db.getTask(id)
-                if (t != null) {
-                    db.setDone(id, !t.done, System.currentTimeMillis())
-                }
-                WblWidgetProvider.updateAll(app)
+                val t = TaskRepo.get(id)
+                if (t != null) TaskRepo.setDone(id, !t.done)
                 // 与应用内行为一致：开关开启时同步刷新置顶通知/保活状态通知
                 PinNotifService.refresh(app)
                 KeepAliveService.refresh(app)
@@ -34,7 +34,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
             } finally {
                 async.finish()
             }
-        }.start()
+        }
     }
 
     companion object {

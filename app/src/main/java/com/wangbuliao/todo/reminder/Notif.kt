@@ -132,9 +132,10 @@ object Notif {
                 ctx, taskId.toInt(), open,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            // 通知栏动作：完成 / 10分钟后再提醒
+            // 通知栏动作：完成 / 5分钟后再提醒 / 10分钟后再提醒
             val donePi = actionPi(ctx, taskId, ReminderReceiver.ACTION_DONE, 1)
-            val snoozePi = actionPi(ctx, taskId, ReminderReceiver.ACTION_SNOOZE, 2)
+            val snooze5Pi = actionPi(ctx, taskId, ReminderReceiver.ACTION_SNOOZE, 2, 5)
+            val snooze10Pi = actionPi(ctx, taskId, ReminderReceiver.ACTION_SNOOZE, 3, 10)
 
             val text = buildString {
                 if (category.isNotEmpty()) append("[$category] ")
@@ -152,7 +153,8 @@ object Notif {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setFullScreenIntent(pi, true)
                 .addAction(0, "完成", donePi)
-                .addAction(0, "10分钟后再提醒", snoozePi)
+                .addAction(0, "5分钟后再提醒", snooze5Pi)
+                .addAction(0, "10分钟后再提醒", snooze10Pi)
                 .build()
             NotificationManagerCompat.from(ctx).notify(notifId(taskId), n)
         } catch (e: Exception) {
@@ -160,10 +162,17 @@ object Notif {
         }
     }
 
-    private fun actionPi(ctx: Context, taskId: Long, action: String, reqCode: Int): PendingIntent {
+    private fun actionPi(
+        ctx: Context,
+        taskId: Long,
+        action: String,
+        reqCode: Int,
+        snoozeMin: Int = 0
+    ): PendingIntent {
         val i = Intent(ctx, ReminderReceiver::class.java).apply {
             this.action = action
             putExtra("task_id", taskId)
+            if (snoozeMin > 0) putExtra("snooze_min", snoozeMin)
         }
         return PendingIntent.getBroadcast(
             ctx, (taskId * 10 + reqCode).toInt(), i,

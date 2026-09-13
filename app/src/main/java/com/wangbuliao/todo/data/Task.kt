@@ -14,6 +14,8 @@ data class Task(
     val remindAt: Long = 0,
     /** 提醒是否已发出（防重复通知） */
     val reminded: Boolean = false,
+    /** 重复规则：0=不重复 1=每天 2=每周 3=每月（见 RepeatRule，仅在有提醒时间时生效） */
+    val repeat: Int = 0,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
     /** 置顶（列表最上方） */

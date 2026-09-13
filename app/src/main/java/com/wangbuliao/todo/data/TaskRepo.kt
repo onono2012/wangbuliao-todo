@@ -1,6 +1,8 @@
 package com.wangbuliao.todo.data
 
 import com.wangbuliao.todo.AppCtx
+import com.wangbuliao.todo.reminder.AlarmScheduler
+import com.wangbuliao.todo.util.RepeatRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -29,9 +31,37 @@ object TaskRepo {
         widgetRefresh()
     }
 
-    suspend fun setDone(id: Long, done: Boolean) {
-        withContext(Dispatchers.IO) { db.setDone(id, done, System.currentTimeMillis()) }
+    /**
+     * 切换已办状态。重复任务（repeat>0 且有提醒时间）勾选完成时不进已办，
+     * 自动把提醒时间滚动到下一周期（保持未完成）并重排闹钟。
+     * @return 滚动后的新任务状态；普通完成/取消完成返回 null
+     */
+    suspend fun setDone(id: Long, done: Boolean): Task? {
+        val now = System.currentTimeMillis()
+        val rolled = withContext(Dispatchers.IO) {
+            if (done) {
+                val t = db.getTask(id)
+                val next = if (t != null) RepeatRule.next(t.remindAt, t.repeat, now) else 0L
+                if (t != null && next > 0) {
+                    db.rollRepeat(id, next, now)
+                    t.copy(done = false, remindAt = next, reminded = false, updatedAt = now)
+                } else {
+                    db.setDone(id, true, now)
+                    null
+                }
+            } else {
+                db.setDone(id, false, now)
+                null
+            }
+        }
+        // 统一闹钟管理：滚动后排下一期；普通完成后取消闹钟（schedule 对 done/无提醒任务内部执行 cancel）
+        try {
+            val latest = rolled ?: withContext(Dispatchers.IO) { db.getTask(id) }
+            latest?.let { AlarmScheduler.schedule(AppCtx.app, it) }
+        } catch (_: Exception) {
+        }
         widgetRefresh()
+        return rolled
     }
 
     suspend fun markReminded(id: Long) {

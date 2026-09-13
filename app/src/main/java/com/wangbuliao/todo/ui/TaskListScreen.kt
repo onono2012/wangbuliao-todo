@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangbuliao.todo.data.Task
+import com.wangbuliao.todo.util.RepeatRule
 import com.wangbuliao.todo.util.TimeFmt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -435,7 +436,7 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
                             color = MaterialTheme.colorScheme.tertiary
                         )
                     }
-                    // 提醒时间
+                    // 提醒时间（重复任务附「每天/每周/每月」标签）
                     if (task.remindAt > 0 && !task.done) {
                         val overdue = task.remindAt < now
                         Icon(
@@ -444,8 +445,11 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
                             tint = if (overdue) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val repeatLabel = RepeatRule.label(task.repeat)
                         Text(
-                            TimeFmt.remind(task.remindAt) + if (overdue) "（已过）" else "",
+                            TimeFmt.remind(task.remindAt) +
+                                (if (repeatLabel.isNotEmpty()) " · $repeatLabel" else "") +
+                                if (overdue) "（已过）" else "",
                             fontSize = 11.sp,
                             color = if (overdue) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant
