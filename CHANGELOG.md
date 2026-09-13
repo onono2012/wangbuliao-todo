@@ -11,7 +11,11 @@
 
 ### 发布记录
 - release APK 10,019,633B，sha256 142d195f9a3573da89fc0db6a84d14d8a192477099d1958d94166581912941f9
-- （发布渠道验证结果待 publish.py 执行后补记）
+- GitHub Release v1.4.1（资产 digest=sha256:142d…41f9 与本地一致）+ wbl-update.json 提交 main（24f1044）
+- 检查线路 5/5 通过（raw / gh-proxy / ghproxy.net / jsDelivr（purge 后 vc=10401）/ api.github tag=v1.4.1）
+- 下载线路 5/6 通过（官网 Pages / github 直连 / gh-proxy / ghproxy.net / api 资产均 200；ghfast.top 整站不可达，末位兜底不影响）
+- 官网 Pages wbl-latest.apk 已更新 v1.4.1（95b4585），下载 hash 与 release APK 一致
+- 123 网盘 WebDAV 同步：wbl-v1.4.1-vc10401.apk + wbl-update.json + SHA256SUMS.txt（均 201）
 
 ## v1.4.0 (10400) — 全屏主题 · 照片定制 · 日历农历 · 底部导航大改版
 
