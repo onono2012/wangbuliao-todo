@@ -1,18 +1,18 @@
 {
-  "versionCode": 10501,
-  "versionName": "1.5.1",
+  "versionCode": 10503,
+  "versionName": "1.5.3",
   "force": true,
-  "desc": "# 忘不了 v1.5.1 更新说明\n\n## 更新内容\n- **重复任务**：编辑任务时可设置重复（每天/每周/每月，仅在设置了提醒时间时生效）。完成重复任务后自动滚动到下一周期提醒，「每天喝水」「每周例会」这类例行待办不用反复新建\n- **过期补滚**：重复任务放置多个周期后完成，会一次性补滚到下一个未来周期，不会用过期时间再提醒你\n- **稍后再提醒**：提醒通知新增「5分钟后再提醒」「10分钟后再提醒」按钮，忙的时候点一下稍后继续提醒，改期精确重排闹钟\n- **重复标识**：任务列表与桌面小组件均显示重复图标（🔁），例行任务一眼识别\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。旧版本用户可通过 App 内「检查更新」直接覆盖升级，数据自动保留（数据库自动升级，已有任务不受影响）。",
-  "sha256": "1b9946c64322d65cc264c6591cfb121557decd06c1d90642e6f980fc62aa2898",
-  "size": 10036137,
-  "fileName": "wbl-v1.5.1-vc10501.apk",
+  "desc": "## 忘不了 v1.5.3 — 九项体验整改\n\n本版包含 v1.5.2 全部功能（备份拆云端/本地 + WebDAV 配置弹窗、悬浮窗关闭按钮），并完成九项体验整改：\n\n1. **通知去重**：开启置顶栏后不再出现两条通知，置顶通知同属前台服务已兼顾保活\n2. **通知明细**：置顶通知展示待办清单（下拉可展开逐条明细，点开直达管理器）\n3. **桌面卡片**：背景改为轻遮罩透出壁纸，不再是一块实心板\n4. **卡片字体**：加大字号充满卡片，远处也能看清\n5. **卡片勾选**：圆圈热区加大防误触\n6. **记一笔**：排版重构 — 分类/标记/附件/提醒分组卡片 + 底部常驻保存栏\n7. **首页分类**：分类 chip 显示待办数，选中分类出现汇总卡（待办/已办 + 进度条）\n8. **底部导航**：选中态金色指示 + 深色图标，不再\"看不见选中了哪个\"\n9. **主题对比度**：全站文字/chip 配色按对比度自动校正，深浅主题均清晰可读\n\n另：设置页「关于」新增官网入口（onono2012.github.io/wangbuliao-todo）\n\n升级方式：下载 APK 直接覆盖安装（签名一致，无需卸载）。",
+  "sha256": "ae07ac9874ff5a9690df36d0ccbec270ff2826278fb8b0015a14b75917a52820",
+  "size": 10049385,
+  "fileName": "wbl-v1.5.3-vc10503.apk",
   "routes": [
     "https://onono2012.github.io/wangbuliao-todo/wbl-latest.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.1/wbl-v1.5.1-vc10501.apk",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.1/wbl-v1.5.1-vc10501.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.1/wbl-v1.5.1-vc10501.apk",
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560442427",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.1/wbl-v1.5.1-vc10501.apk"
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.3/wbl-v1.5.3-vc10503.apk",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.3/wbl-v1.5.3-vc10503.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.3/wbl-v1.5.3-vc10503.apk",
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560788676",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.3/wbl-v1.5.3-vc10503.apk"
   ],
-  "publishedAt": "2026-09-13T03:05:37+0000"
+  "publishedAt": "2026-09-13T07:29:18+0000"
 }
