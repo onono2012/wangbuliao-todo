@@ -16,18 +16,22 @@ object TaskRepo {
 
     /** 返回任务 id（新插入返回自增 id，更新返回原 id） */
     suspend fun save(t: Task): Long = withContext(Dispatchers.IO) {
-        if (t.id <= 0) db.insert(t) else {
+        val id = if (t.id <= 0) db.insert(t) else {
             db.update(t)
             t.id
         }
+        widgetRefresh()
+        id
     }
 
     suspend fun delete(id: Long) {
         withContext(Dispatchers.IO) { db.delete(id) }
+        widgetRefresh()
     }
 
     suspend fun setDone(id: Long, done: Boolean) {
         withContext(Dispatchers.IO) { db.setDone(id, done, System.currentTimeMillis()) }
+        widgetRefresh()
     }
 
     suspend fun markReminded(id: Long) {
@@ -73,7 +77,7 @@ object TaskRepo {
                 audioPath = audioPath,
                 audioDur = audioDur
             )
-        )
+        ).also { widgetRefresh() }
     }
 
     suspend fun quickNote(
@@ -104,6 +108,14 @@ object TaskRepo {
                 audioDur = audioDur,
                 images = images
             )
-        )
+        ).also { widgetRefresh() }
+    }
+
+    /** 数据变化后刷新桌面小组件（失败绝不影响主流程） */
+    private fun widgetRefresh() {
+        try {
+            com.wangbuliao.todo.widget.WblWidgetProvider.updateAll(AppCtx.app)
+        } catch (_: Exception) {
+        }
     }
 }

@@ -210,6 +210,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _screen.value = sc
     }
 
+    /** v1.5.0 桌面小组件「+」：打开新建任务编辑页（空白草稿） */
+    fun openNewTask() {
+        _draft.value = EditDraft(
+            category = _ui.value.categories.firstOrNull() ?: Task.DEFAULT_CATEGORY
+        )
+        draftOriginal = _draft.value
+        _screen.value = Screen.Edit
+    }
+
     /** 日历页选中某天「新增事项」：预填提醒时间为当天 09:00 */
     fun openNewForDate(dayStartMillis: Long) {
         val cal = java.util.Calendar.getInstance().apply {

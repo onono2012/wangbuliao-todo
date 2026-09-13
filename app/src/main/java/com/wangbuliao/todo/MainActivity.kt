@@ -75,6 +75,7 @@ import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
 import com.wangbuliao.todo.ui.wblCardColor
 import com.wangbuliao.todo.update.Updater
+import com.wangbuliao.todo.widget.WblWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import java.io.File
 import kotlinx.coroutines.withContext
@@ -89,10 +90,16 @@ class MainActivity : ComponentActivity() {
     /** onNewIntent 深链信号：保活通知「打开管理器」 */
     private var goSettingsSignal by mutableStateOf(false)
 
+    /** onNewIntent 深链信号：桌面小组件「+」新建任务 */
+    private var goNewTaskSignal by mutableStateOf(false)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra(KeepAliveService.EXTRA_OPEN_SETTINGS, false)) {
             goSettingsSignal = true
+        }
+        if (intent.getBooleanExtra(WblWidgetProvider.EXTRA_NEW_TASK, false)) {
+            goNewTaskSignal = true
         }
     }
 
@@ -130,11 +137,21 @@ class MainActivity : ComponentActivity() {
                     if (intent?.getBooleanExtra(KeepAliveService.EXTRA_OPEN_SETTINGS, false) == true) {
                         vm.goScreen(Screen.Settings)
                     }
+                    // 桌面小组件「+」深链 → 新建任务编辑页（冷启动）
+                    if (intent?.getBooleanExtra(WblWidgetProvider.EXTRA_NEW_TASK, false) == true) {
+                        vm.openNewTask()
+                    }
                 }
                 LaunchedEffect(goSettingsSignal) {
                     if (goSettingsSignal) {
                         vm.goScreen(Screen.Settings)
                         goSettingsSignal = false
+                    }
+                }
+                LaunchedEffect(goNewTaskSignal) {
+                    if (goNewTaskSignal) {
+                        vm.openNewTask()
+                        goNewTaskSignal = false
                     }
                 }
 

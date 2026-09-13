@@ -17,5 +17,12 @@ class WblApp : Application() {
         Prefs.init()
         Notif.ensureChannels(this)
         CrashReporter.init(this) // 崩溃监控：全局捕获落盘，下次启动提示+检查更新顺带上报
+        // v1.5.0：启动时后台刷新桌面小组件（覆盖数据恢复/覆盖安装等数据变化场景）
+        Thread {
+            try {
+                com.wangbuliao.todo.widget.WblWidgetProvider.updateAll(this)
+            } catch (_: Exception) {
+            }
+        }.start()
     }
 }
