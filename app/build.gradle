@@ -66,4 +66,7 @@ dependencies {
     implementation 'androidx.compose.foundation:foundation:1.5.4'
     implementation 'androidx.compose.material3:material3:1.1.2'
     implementation 'androidx.compose.material:material-icons-extended:1.5.4'
+
+    // 单元测试（本地 JVM，无需设备）
+    testImplementation 'junit:junit:4.12'
 }

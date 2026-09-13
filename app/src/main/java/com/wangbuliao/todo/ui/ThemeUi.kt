@@ -37,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.wangbuliao.todo.util.ColorContrast
 
 /**
  * 主题化 UI 辅助：让主题色贯穿全部界面（背景 wash / 顶栏 / 卡片透明度 / 分类图标）。
@@ -57,19 +58,10 @@ fun wblTopBarThemed(): Boolean {
     return spec.bgRes != null || spec.photoPath != null || spec.gradient != null
 }
 
-/** 颜色相对亮度（WCAG 0..1） */
-private fun Color.relLum(): Float {
-    // 注意：Compose Color 分量已是 0..1，切勿再除 255
-    fun ch(c: Float): Float =
-        if (c <= 0.03928f) c / 12.92f
-        else Math.pow(((c + 0.055) / 1.055).toDouble(), 2.4).toFloat()
-    return 0.2126f * ch(red) + 0.7152f * ch(green) + 0.0722f * ch(blue)
-}
+/** 颜色相对亮度（WCAG 0..1）——委托 [ColorContrast] 纯函数（可单测） */
+private fun Color.relLum(): Float = ColorContrast.relLuminance(red, green, blue)
 
-private fun contrastRatio(l1: Float, l2: Float): Float {
-    val hi = maxOf(l1, l2); val lo = minOf(l1, l2)
-    return (hi + 0.05f) / (lo + 0.05f)
-}
+private fun contrastRatio(l1: Float, l2: Float): Float = ColorContrast.contrastRatio(l1, l2)
 
 /**
  * 顶栏内容色（标题/副标题/图标）：
@@ -83,11 +75,8 @@ fun wblTopBarContentColor(): Color {
     val spec = LocalWblTheme.current
     if (spec.bgRes != null || spec.photoPath != null) return Color.White
     val g = spec.gradient ?: return MaterialTheme.colorScheme.onSurface
-    val lums = g.map { it.relLum() }
-    val whiteWorst = lums.minOf { contrastRatio(1f, it) }
-    val blackLum = Color(0xFF1B1B1F).relLum()
-    val blackWorst = lums.minOf { contrastRatio(it, blackLum) }
-    return if (blackWorst > whiteWorst) Color(0xFF1B1B1F) else Color.White
+    val darkText = ColorContrast.preferDarkText(g.map { it.relLum() })
+    return if (darkText) Color(ColorContrast.NEAR_BLACK_ARGB) else Color.White
 }
 
 /**
@@ -100,18 +89,9 @@ fun wblTopBarVeil(): Pair<Color, Float> {
     if (spec.bgRes != null || spec.photoPath != null) return Color.Black to 0f
     val g = spec.gradient ?: return Color.Black to 0f
     val lums = g.map { it.relLum() }
-    val whiteWorst = lums.minOf { contrastRatio(1f, it) }
-    val blackLum = Color(0xFF1B1B1F).relLum()
-    val blackWorst = lums.minOf { contrastRatio(it, blackLum) }
-    return if (blackWorst > whiteWorst) {
-        // 黑字：最差在最暗色标 → 白纱提亮，需 L >= 0.229
-        val lmin = lums.min()
-        Color.White to minOf(0.35f, maxOf(0f, (0.229f - lmin) / (1f - lmin)))
-    } else {
-        // 白字：最差在最亮色标 → 黑纱压暗，需 L <= 0.183
-        val lmax = lums.max()
-        Color.Black to minOf(0.35f, maxOf(0f, 1f - 0.183f / lmax))
-    }
+    val darkText = ColorContrast.preferDarkText(lums)
+    return if (darkText) Color.White to ColorContrast.veilAlpha(lums, true)
+    else Color.Black to ColorContrast.veilAlpha(lums, false)
 }
 
 /** 顶栏背景 Modifier：照片=深色遮罩；渐变=主题渐变+对比度补偿 veil；其余=默认 */
