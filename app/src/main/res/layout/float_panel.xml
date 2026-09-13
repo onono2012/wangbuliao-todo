@@ -27,6 +27,16 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/btn_float_off"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:text="⏻"
+            android:textColor="#99FFFFFF"
+            android:textSize="15sp" />
+
+        <TextView
             android:id="@+id/btn_close"
             android:layout_width="32dp"
             android:layout_height="32dp"

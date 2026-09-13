@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """忘不了 发布工具：GitHub Release + wbl-update.json + 123网盘 WebDAV 三渠道同步
+（v1.5.2 起 123网盘 /app 只保留 APK：不再上传 wbl-update.json / SHA256SUMS.txt，并在发布时自动清理存量）
 
 用法：
-  # 完整发布（创建 Release + 上传 APK + 提交 wbl-update.json + 上传 123网盘 + 全线路验证）
+  # 完整发布（创建 Release + 上传 APK + 提交 wbl-update.json + 上传 APK 到 123网盘 + 全线路验证）
   python3 publish.py <apk路径> -v 1.2.0 -c 10200 -n notes.md
 
-  # 仅提交/回滚 wbl-update.json（含 jsDelivr purge + 123网盘同步，不动 Release）
+  # 仅提交/回滚 wbl-update.json（含 jsDelivr purge，不动 Release；不再同步网盘）
   python3 publish.py --commit-json wbl-update.json
 
   # 删除测试 Release + tag（E2E 清理）
@@ -152,6 +153,16 @@ def dav_put(local, remote_name):
         raise RuntimeError(f"网盘上传 {remote_name} 失败 HTTP {code}")
 
 
+def dav_cleanup():
+    """v1.5.2 起网盘 /app 只保留 APK：删除 json/SUMS 等冗余文件（404=本就不存在，忽略）"""
+    for name in ("wbl-update.json", "SHA256SUMS.txt"):
+        code = dav_curl(["-X", "DELETE", f"{DAV}{DAV_DIR}/{name}"])
+        if code in ("200", "204", "404"):
+            print(f"  ✓ 网盘清理 {name} (HTTP {code})")
+        else:
+            print(f"  [WARN] 网盘清理 {name} HTTP {code}")
+
+
 def verify_routes(jtxt):
     j = json.loads(jtxt)
     print("== 验证：检查线路 ==")
@@ -240,15 +251,11 @@ def do_publish(apk, version, vc, notes_file):
     if not commit_json(jtxt):
         sys.exit("提交 wbl-update.json 失败")
 
-    # 4. 123网盘 WebDAV 同步
-    print("== 123网盘 WebDAV 同步 ==")
+    # 4. 123网盘 WebDAV 同步（v1.5.2 起只保留 APK：json/SUMS 冗余不再上传，并清理存量）
+    print("== 123网盘 WebDAV 同步（仅 APK） ==")
     dav_upload_dir()
     dav_put(apk, apk_name)
-    open("/tmp/_wj.json", "w", encoding="utf-8").write(jtxt)
-    dav_put("/tmp/_wj.json", "wbl-update.json")
-    sums = f"{sha}  {apk_name}\n"
-    open("/tmp/_sums.txt", "w", encoding="utf-8").write(sums)
-    dav_put("/tmp/_sums.txt", "SHA256SUMS.txt")
+    dav_cleanup()
 
     # 5. 验证
     verify_routes(jtxt)
@@ -260,10 +267,7 @@ def do_commit_json(path):
     json.loads(jtxt)  # 校验合法
     if not commit_json(jtxt):
         sys.exit("提交失败")
-    print("== 123网盘同步 json ==")
-    dav_upload_dir()
-    open("/tmp/_wj.json", "w", encoding="utf-8").write(jtxt)
-    dav_put("/tmp/_wj.json", "wbl-update.json")
+    # v1.5.2 起 123网盘只保留 APK，json 不再同步网盘
     verify_routes(jtxt)
 
 

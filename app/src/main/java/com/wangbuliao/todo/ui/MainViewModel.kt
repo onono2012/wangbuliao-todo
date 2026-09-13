@@ -98,7 +98,9 @@ data class UiState(
 /** 数据备份/恢复 UI 状态 */
 data class BackupUiState(
     val busy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    /** 消息归属区域：cloud=云端备份卡片 local=本地备份卡片 */
+    val target: String = "cloud"
 )
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -142,6 +144,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val r = com.wangbuliao.todo.util.BackupManager.restore(ctx)
             _backup.value = BackupUiState(busy = false, message = r)
+        }
+    }
+
+    /** 本地备份：写入用户在 SAF 中选择的文件 Uri */
+    fun doLocalBackup(uri: android.net.Uri) {
+        if (_backup.value.busy) return
+        _backup.value = BackupUiState(busy = true, message = "本地备份中…", target = "local")
+        viewModelScope.launch {
+            val r = com.wangbuliao.todo.util.BackupManager.backupToUri(ctx, uri)
+            _backup.value = BackupUiState(busy = false, message = r, target = "local")
+        }
+    }
+
+    /** 本地恢复：从用户选择的备份 zip 恢复（成功后应用自动重启） */
+    fun doLocalRestore(uri: android.net.Uri) {
+        if (_backup.value.busy) return
+        _backup.value = BackupUiState(busy = true, message = "恢复中…完成后应用将重启", target = "local")
+        viewModelScope.launch {
+            val r = com.wangbuliao.todo.util.BackupManager.restoreFromUri(ctx, uri)
+            _backup.value = BackupUiState(busy = false, message = r, target = "local")
         }
     }
 

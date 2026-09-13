@@ -308,6 +308,13 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
                     closePanel()
                 }
                 v.findViewById<TextView>(R.id.btn_close).setOnClickListener { closePanel() }
+                // 关闭悬浮窗：停服务并同步关闭设置页开关（Boot/App 自启均以该开关为门控）
+                v.findViewById<TextView>(R.id.btn_float_off).setOnClickListener {
+                    com.wangbuliao.todo.util.Prefs.setFloatEnabled(false)
+                    closePanel()
+                    toast("悬浮窗已关闭，可在设置页重新开启")
+                    stopSelf()
+                }
                 wm.addView(v, p)
                 panelView = v
                 panelParams = p
