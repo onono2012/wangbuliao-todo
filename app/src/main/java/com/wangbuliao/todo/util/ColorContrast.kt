@@ -106,4 +106,38 @@ object ColorContrast {
      * 线性亮度混合近似：newL = a*veilL + (1-a)*bgL（白纱 veilL=1，黑纱 veilL=0）。
      */
     fun meetsWcagAA(contrast: Float): Boolean = contrast >= WCAG_AA
+
+    /**
+     * 强调色可读性校正：fg 在 bg 上对比度不足 [minRatio] 时，
+     * 向近黑（亮背景）或白色（暗背景）逐步插值，直到达标。
+     * 保持原色相倾向，仅压暗/提亮，是「主题对比度根治」的核心纯函数。
+     *
+     * @return 达标颜色的 ARGB（原色已达标则原样返回）
+     */
+    fun ensureReadableArgb(fgArgb: Int, bgArgb: Int, minRatio: Float = WCAG_AA): Int {
+        val bgLum = relLuminance(bgArgb)
+        if (contrastRatioArgb(fgArgb, bgArgb) >= minRatio) return fgArgb
+        // 亮背景→往近黑压；暗背景→往白提
+        val targetArgb = if (bgLum > 0.25f) NEAR_BLACK_ARGB else 0xFFFFFFFF.toInt()
+        val fr = (fgArgb shr 16) and 0xFF; val fg = (fgArgb shr 8) and 0xFF; val fb = fgArgb and 0xFF
+        val tr = (targetArgb shr 16) and 0xFF; val tg = (targetArgb shr 8) and 0xFF; val tb = targetArgb and 0xFF
+        var t = 0.08f
+        while (t < 1f) {
+            val r = (fr + (tr - fr) * t).toInt().coerceIn(0, 255)
+            val g = (fg + (tg - fg) * t).toInt().coerceIn(0, 255)
+            val b = (fb + (tb - fb) * t).toInt().coerceIn(0, 255)
+            val cand = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            if (contrastRatioArgb(cand, bgArgb) >= minRatio) return cand
+            t += 0.04f
+        }
+        return targetArgb
+    }
+
+    /** 两色 sRGB 分量按 alpha 混合（模拟半透明表面叠加后的有效背景），返回 ARGB */
+    fun blendArgb(fgArgb: Int, bgArgb: Int, alpha: Float): Int {
+        val a = alpha.coerceIn(0f, 1f)
+        fun ch(sh: Int) = (((fgArgb shr sh) and 0xFF) * a + ((bgArgb shr sh) and 0xFF) * (1 - a))
+            .toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
 }

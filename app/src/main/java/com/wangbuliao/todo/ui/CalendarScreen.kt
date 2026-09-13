@@ -339,7 +339,7 @@ private fun DayDetail(
                         Text(
                             "节气 · $term",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = wblAccentColor(),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -432,7 +432,7 @@ private fun DayDetail(
                                 Text(
                                     "已办",
                                     fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = wblAccentColor(),
                                     modifier = Modifier
                                         .background(
                                             MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),

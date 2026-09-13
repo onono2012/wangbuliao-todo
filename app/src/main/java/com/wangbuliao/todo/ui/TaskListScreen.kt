@@ -19,7 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -181,6 +185,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
             ) {
                 StatusFilter.values().forEach { f ->
                     FilterChip(
+                        colors = wblChipColors(),
                         selected = ui.status == f,
                         onClick = { vm.setStatus(f) },
                         label = { Text(f.label) },
@@ -190,6 +195,7 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     )
                 }
                 FilterChip(
+                    colors = wblChipColors(),
                     selected = ui.urgentOnly,
                     onClick = { vm.toggleUrgentOnly() },
                     label = { Text("仅紧急") },
@@ -201,29 +207,84 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                     }
                 )
             }
-            // 分类筛选行
+            // 分类筛选行（⑦ 直观化：chip 直接带待办数徽标，一眼看清各分类负载）
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val totalPending = ui.allTasks.count { !it.done }
                 FilterChip(
+                    colors = wblChipColors(),
                     selected = ui.category == null,
                     onClick = { vm.setCategoryFilter(null) },
-                    label = { Text("全部分类") },
+                    label = {
+                        Text(if (totalPending > 0) "全部分类 ·$totalPending" else "全部分类")
+                    },
                     leadingIcon = {
                         Icon(Icons.Outlined.Category, null, Modifier.size(16.dp))
                     }
                 )
                 ui.categories.forEach { c ->
+                    val n = ui.allTasks.count { !it.done && it.category == c }
                     FilterChip(
+                        colors = wblChipColors(),
                         selected = ui.category == c,
                         onClick = { vm.setCategoryFilter(c) },
-                        label = { Text(c) },
+                        label = { Text(if (n > 0) "$c ·$n" else c) },
                         leadingIcon = {
                             Icon(categoryIcon(c), null, Modifier.size(16.dp))
                         }
                     )
+                }
+            }
+            // ⑦ 选中某分类时：分类汇总卡（配色图标 + 待办/已办计数 + 完成进度条）
+            ui.category?.let { cat ->
+                val pending = ui.allTasks.count { !it.done && it.category == cat }
+                val doneN = ui.allTasks.count { it.done && it.category == cat }
+                val total = pending + doneN
+                Card(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            Modifier.size(36.dp).clip(CircleShape)
+                                .background(categoryColor(cat)),
+                            Alignment.Center
+                        ) {
+                            Icon(
+                                categoryIcon(cat), null,
+                                Modifier.size(20.dp), tint = Color.White
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                cat,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "$pending 条待办 · $doneN 条已办",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (total > 0) {
+                                Spacer(Modifier.height(6.dp))
+                                LinearProgressIndicator(
+                                    progress = doneN.toFloat() / total.toFloat(),
+                                    modifier = Modifier.fillMaxWidth().height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = categoryColor(cat),
+                                    trackColor = categoryColor(cat).copy(alpha = 0.15f)
+                                )
+                            }
+                        }
+                    }
                 }
             }
             val visible = ui.visible
@@ -420,7 +481,7 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
                         Text(
                             TimeFmt.dur(task.audioDur),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            color = wblAccentColor()
                         )
                     }
                     // 图片徽章

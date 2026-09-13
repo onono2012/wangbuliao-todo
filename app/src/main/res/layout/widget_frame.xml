@@ -1,40 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 桌面小组件主布局：header（点按打开App） + 任务列表 + 空态 -->
+<!-- 桌面小组件主布局：透明背景，header（点按打开App） + 任务列表 + 空态；白字+投影 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="8dp">
 
     <LinearLayout
         android:id="@+id/widget_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingTop="2dp"
+        android:paddingBottom="4dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="5"
             android:text="@string/app_name"
-            android:textColor="#1B1B1F"
-            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:textSize="19sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:textColor="#6B7280"
-            android:textSize="12sp" />
+            android:layout_marginEnd="8dp"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="5"
+            android:textColor="#F2F2F2"
+            android:textSize="14sp" />
 
         <ImageView
             android:id="@+id/widget_add"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:contentDescription="@string/widget_add_desc"
             android:src="@drawable/ic_widget_add" />
     </LinearLayout>
@@ -43,7 +53,7 @@
         android:id="@+id/widget_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="2dp"
         android:layout_weight="1"
         android:divider="@null"
         android:dividerHeight="0dp"
@@ -55,8 +65,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
+        android:shadowColor="#CC000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="5"
         android:text="@string/widget_empty"
-        android:textColor="#9AA0A6"
-        android:textSize="13sp"
+        android:textColor="#F2F2F2"
+        android:textSize="15sp"
         android:visibility="gone" />
 </LinearLayout>

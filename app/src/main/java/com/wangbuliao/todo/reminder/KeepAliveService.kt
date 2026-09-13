@@ -37,6 +37,15 @@ class KeepAliveService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 去重守卫：置顶栏开启时保活通知不应存在（含 START_STICKY 重建场景）
+        try {
+            com.wangbuliao.todo.util.Prefs.init()
+            if (com.wangbuliao.todo.util.Prefs.pinNotif.value) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        } catch (_: Exception) {
+        }
         scope.launch {
             try {
                 val tasks = TaskRepo.tasks()
@@ -136,6 +145,12 @@ class KeepAliveService : Service() {
 
         fun start(ctx: Context) {
             try {
+                // 去重：置顶栏通知（PinNotifService）本身就是前台服务，已承担保活职责。
+                // 两者同开会出现两条常驻通知，因此置顶栏开启时保活通知自动合并（不启动）。
+                if (com.wangbuliao.todo.util.Prefs.pinNotif.value) {
+                    stop(ctx)
+                    return
+                }
                 val i = Intent(ctx, KeepAliveService::class.java)
                 if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(i)
                 else ctx.startService(i)
@@ -152,9 +167,11 @@ class KeepAliveService : Service() {
             }
         }
 
-        /** 数据变化后刷新状态通知（仅在服务已运行时有效） */
+        /** 数据变化后刷新状态通知（仅在服务运行且置顶栏未开启时有效） */
         fun refresh(ctx: Context) {
-            if (com.wangbuliao.todo.util.Prefs.keepAlive.value) start(ctx)
+            if (com.wangbuliao.todo.util.Prefs.keepAlive.value &&
+                !com.wangbuliao.todo.util.Prefs.pinNotif.value
+            ) start(ctx)
         }
     }
 }

@@ -72,10 +72,16 @@ class WblWidgetService : RemoteViewsService() {
                 rv.setViewVisibility(R.id.item_sub, View.VISIBLE)
                 rv.setTextViewText(R.id.item_sub, sub)
             }
-            // fill-in：把任务 id 合并进 provider 设置的 toggle 模板
+            // 热区分离（防误触）：
+            // - 勾选圈（44dp 大热区）→ 标记已办
+            // - 行其余区域 → 打开 App 直达该任务编辑页
+            rv.setOnClickFillInIntent(
+                R.id.item_check,
+                Intent().putExtra(WidgetActionReceiver.EXTRA_TASK_ID, t.id)
+            )
             rv.setOnClickFillInIntent(
                 R.id.item_root,
-                Intent().putExtra(WidgetActionReceiver.EXTRA_TASK_ID, t.id)
+                Intent().putExtra(WidgetActionReceiver.EXTRA_OPEN_ID, t.id)
             )
             return rv
         }

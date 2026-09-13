@@ -19,8 +19,10 @@ import androidx.compose.material.icons.outlined.Pending
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,8 +31,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -250,6 +254,65 @@ fun wblCardColor(): Color {
     val spec = LocalWblTheme.current
     val photo = spec.bgRes != null || spec.photoPath != null
     return MaterialTheme.colorScheme.surface.copy(alpha = if (photo) 0.92f else 0.86f)
+}
+
+/** 有效卡片背景 ARGB（surface@86% 叠 background 的近似，供对比度计算） */
+@Composable
+fun wblEffectiveCardArgb(): Int {
+    val s = MaterialTheme.colorScheme
+    val spec = LocalWblTheme.current
+    val photo = spec.bgRes != null || spec.photoPath != null
+    val alpha = if (photo) 0.92f else 0.86f
+    // 照片主题背景≈深色遮罩后的照片，按 scheme.background 近似即可
+    return ColorContrast.blendArgb(
+        s.surface.toArgb(), s.background.toArgb(), alpha
+    )
+}
+
+/**
+ * 保证可读的主题强调色（对比度根治⑨）：
+ * primary 在当前卡片背景上对比度不足 WCAG AA 时自动压暗/提亮，
+ * 用于所有「以主题色显示的小字/选中态图标」，替代裸 colorScheme.primary。
+ */
+@Composable
+fun wblAccentColor(): Color {
+    val p = MaterialTheme.colorScheme.primary.toArgb()
+    return Color(ColorContrast.ensureReadableArgb(p, wblEffectiveCardArgb()))
+}
+
+/**
+ * ⑨ 一次性根治：全站 FilterChip（状态筛选行/分类行/重复规则等）统一可读配色。
+ * - 未选中：实色 chip 背景（surface 叠页面背景，不透底）+ 保证 WCAG AA 的文字/图标色 + 清晰描边
+ * - 选中：主题强调色实底 + 自动选择黑/白文字（按对比度取优）
+ * 所有 FilterChip 必须传 colors = wblChipColors()，禁止再用默认配色。
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun wblChipColors(): SelectableChipColors {
+    val s = MaterialTheme.colorScheme
+    val spec = LocalWblTheme.current
+    val photo = spec.bgRes != null || spec.photoPath != null
+    // chip 实际落在页面背景上：surface 以 86%/92% 叠加 background 后的实色
+    val chipBgArgb = ColorContrast.blendArgb(
+        s.surface.toArgb(), s.background.toArgb(), if (photo) 0.92f else 0.86f
+    )
+    val chipBg = Color(chipBgArgb)
+    // 未选中文字：onSurfaceVariant 不可读时自动压暗/提亮到 AA
+    val labelArgb = ColorContrast.ensureReadableArgb(s.onSurfaceVariant.toArgb(), chipBgArgb)
+    val label = Color(labelArgb)
+    // 选中态：强调色实底 + 黑/白文字取对比度更高者
+    val accent = wblAccentColor()
+    val accentLum = accent.luminance()
+    val selText = if (ColorContrast.preferDarkText(listOf(accentLum)))
+        Color(ColorContrast.NEAR_BLACK_ARGB) else Color.White
+    return FilterChipDefaults.filterChipColors(
+        containerColor = chipBg,
+        labelColor = label,
+        iconColor = label,
+        selectedContainerColor = accent,
+        selectedLabelColor = selText,
+        selectedLeadingIconColor = selText
+    )
 }
 
 /** 预设分类图标（自定义分类按默认标签图标） */

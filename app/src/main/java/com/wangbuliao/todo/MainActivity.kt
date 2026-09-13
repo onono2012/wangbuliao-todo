@@ -73,6 +73,7 @@ import com.wangbuliao.todo.ui.SettingsScreen
 import com.wangbuliao.todo.ui.ThemeScreen
 import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
+import com.wangbuliao.todo.ui.wblAccentColor
 import com.wangbuliao.todo.ui.wblCardColor
 import com.wangbuliao.todo.update.Updater
 import com.wangbuliao.todo.widget.WblWidgetProvider
@@ -93,6 +94,9 @@ class MainActivity : ComponentActivity() {
     /** onNewIntent 深链信号：桌面小组件「+」新建任务 */
     private var goNewTaskSignal by mutableStateOf(false)
 
+    /** onNewIntent 深链信号：桌面小组件行点击 → 打开指定任务编辑页 */
+    private var goOpenTaskSignal by mutableStateOf(0L)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra(KeepAliveService.EXTRA_OPEN_SETTINGS, false)) {
@@ -100,6 +104,10 @@ class MainActivity : ComponentActivity() {
         }
         if (intent.getBooleanExtra(WblWidgetProvider.EXTRA_NEW_TASK, false)) {
             goNewTaskSignal = true
+        }
+        val openId = intent.getLongExtra(EXTRA_OPEN_TASK_ID, 0L)
+        if (openId > 0L) {
+            goOpenTaskSignal = openId
         }
     }
 
@@ -140,6 +148,17 @@ class MainActivity : ComponentActivity() {
                     // 桌面小组件「+」深链 → 新建任务编辑页（冷启动）
                     if (intent?.getBooleanExtra(WblWidgetProvider.EXTRA_NEW_TASK, false) == true) {
                         vm.openNewTask()
+                    }
+                    // 桌面小组件行点击深链 → 打开该任务编辑页（冷启动）
+                    val coldOpenId = intent?.getLongExtra(EXTRA_OPEN_TASK_ID, 0L) ?: 0L
+                    if (coldOpenId > 0L) {
+                        vm.openEdit(coldOpenId)
+                    }
+                }
+                LaunchedEffect(goOpenTaskSignal) {
+                    if (goOpenTaskSignal > 0L) {
+                        vm.openEdit(goOpenTaskSignal)
+                        goOpenTaskSignal = 0L
                     }
                 }
                 LaunchedEffect(goSettingsSignal) {
@@ -255,6 +274,11 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("WblMain", "syncServices failed", e)
         }
     }
+
+    companion object {
+        /** 深链 extra：打开指定任务编辑页（桌面小组件行点击） */
+        const val EXTRA_OPEN_TASK_ID = "wbl_open_task_id"
+    }
 }
 
 @Composable
@@ -266,13 +290,16 @@ private fun RowScope.NavItem(
     onClick: () -> Unit
 ) {
     val selected = current == target
+    // ⑧ 选中态可读性根治：primary 与卡片底色对比度不足时自动校色，
+    //    保证任何主题下选中图标/文字都清晰可见
+    val accent = wblAccentColor()
     NavigationBarItem(
         selected = selected,
         onClick = onClick,
         icon = {
             Icon(
                 icon, contentDescription = label,
-                tint = if (selected) MaterialTheme.colorScheme.primary
+                tint = if (selected) accent
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
@@ -280,12 +307,12 @@ private fun RowScope.NavItem(
             Text(
                 label,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) MaterialTheme.colorScheme.primary
+                color = if (selected) accent
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         colors = NavigationBarItemDefaults.colors(
-            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
         )
     )
 }

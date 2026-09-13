@@ -230,7 +230,7 @@ fun ThemeScreen(vm: MainViewModel) {
                                 if (selected) {
                                     Text(
                                         "使用中", style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = wblAccentColor()
                                     )
                                 }
                             }
@@ -270,7 +270,7 @@ fun ThemeScreen(vm: MainViewModel) {
                             Text(
                                 it,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = wblAccentColor()
                             )
                         }
                         if (!customPhoto.isNullOrEmpty()) {

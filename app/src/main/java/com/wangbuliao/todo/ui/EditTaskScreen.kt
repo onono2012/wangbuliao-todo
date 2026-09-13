@@ -33,6 +33,8 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -137,6 +139,7 @@ private fun RemindPickerDialog(
                             else -> df.format(Date(today.timeInMillis + off * 86400000L))
                         }
                         FilterChip(
+                            colors = wblChipColors(),
                             selected = dayOffset == off,
                             onClick = { dayOffset = off },
                             label = { Text(label) }
@@ -151,6 +154,7 @@ private fun RemindPickerDialog(
                 ) {
                     (0..23).forEach { h ->
                         FilterChip(
+                            colors = wblChipColors(),
                             selected = hour == h,
                             onClick = { hour = h },
                             label = { Text(String.format(Locale.getDefault(), "%02d", h)) }
@@ -166,6 +170,7 @@ private fun RemindPickerDialog(
                     (0..11).forEach { i ->
                         val m = i * 5
                         FilterChip(
+                            colors = wblChipColors(),
                             selected = minute == m,
                             onClick = { minute = m },
                             label = { Text(String.format(Locale.getDefault(), "%02d", m)) }
@@ -280,8 +285,10 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             )
         }
     ) { pad ->
+        Column(Modifier.padding(pad).fillMaxWidth()) {
+        // ⑥ 排版重构：内容滚动区 + 底部常驻保存栏（保存键不再埋在页尾）
         Column(
-            Modifier.padding(pad).fillMaxWidth()
+            Modifier.weight(1f).fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
@@ -302,72 +309,91 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 maxLines = 5,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            WblSectionHead("分类", Icons.Outlined.Category, MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(6.dp))
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // ── 分类（卡片分组）──
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
             ) {
-                ui.categories.forEach { c ->
-                    FilterChip(
-                        selected = draft.category == c,
-                        onClick = { vm.updateDraft { it.copy(category = c) } },
-                        label = { Text(c) },
-                        leadingIcon = {
-                            Icon(categoryIcon(c), null, Modifier.size(16.dp))
+                Column(Modifier.padding(14.dp)) {
+                    WblSectionHead("分类", Icons.Outlined.Category, MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ui.categories.forEach { c ->
+                            FilterChip(
+                                colors = wblChipColors(),
+                                selected = draft.category == c,
+                                onClick = { vm.updateDraft { it.copy(category = c) } },
+                                label = { Text(c) },
+                                leadingIcon = {
+                                    Icon(categoryIcon(c), null, Modifier.size(16.dp))
+                                }
+                            )
                         }
-                    )
-                }
-                OutlinedButton(onClick = { showCatDialog = true }) {
-                    Icon(Icons.Filled.Add, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("新分类")
+                        OutlinedButton(onClick = { showCatDialog = true }) {
+                            Icon(Icons.Filled.Add, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("新分类")
+                        }
+                    }
                 }
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            Row(
+            // ── 标记（卡片分组：紧急 + 置顶）──
+            Card(
                 Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
             ) {
-                Column(Modifier.weight(1f)) {
-                    WblSectionHead("紧急", Icons.Outlined.LocalFireDepartment, MaterialTheme.typography.titleSmall)
-                    Text(
-                        "紧急事项置顶并高亮显示",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            WblSectionHead("紧急", Icons.Outlined.LocalFireDepartment, MaterialTheme.typography.titleSmall)
+                            Text(
+                                "紧急事项置顶并高亮显示",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = draft.urgent,
+                            onCheckedChange = { v -> vm.updateDraft { it.copy(urgent = v) } }
+                        )
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            WblSectionHead("置顶", Icons.Outlined.PushPin, MaterialTheme.typography.titleSmall)
+                            Text(
+                                "置顶事项固定在待办列表最上方",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = draft.pinned,
+                            onCheckedChange = { v -> vm.updateDraft { it.copy(pinned = v) } }
+                        )
+                    }
                 }
-                Switch(
-                    checked = draft.urgent,
-                    onCheckedChange = { v -> vm.updateDraft { it.copy(urgent = v) } }
-                )
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // ── 置顶 ──
-            Row(
+            // ── 附件（卡片分组：语音 + 图片）──
+            Card(
                 Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
             ) {
-                Column(Modifier.weight(1f)) {
-                    WblSectionHead("置顶", Icons.Outlined.PushPin, MaterialTheme.typography.titleSmall)
-                    Text(
-                        "置顶事项固定在待办列表最上方",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = draft.pinned,
-                    onCheckedChange = { v -> vm.updateDraft { it.copy(pinned = v) } }
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-
-            // ── 语音记事 ──
+                Column(Modifier.padding(14.dp)) {
             AudioSection(
                 audioPath = draft.audioPath,
                 audioDur = draft.audioDur,
@@ -433,65 +459,80 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
+                } // 附件卡片 Column
+            } // 附件卡片 Card
+            Spacer(Modifier.height(12.dp))
 
-            Row(
+            // ── 提醒（卡片分组：提醒时间 + 重复规则）──
+            Card(
                 Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(containerColor = wblCardColor())
             ) {
-                Column(Modifier.weight(1f)) {
-                    WblSectionHead("提醒", Icons.Outlined.Notifications, MaterialTheme.typography.titleSmall)
-                    Text(
-                        if (draft.remindAt > 0) TimeFmt.remind(draft.remindAt)
-                        else "到时弹出通知提醒",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                OutlinedButton(onClick = { showPicker = true }) {
-                    Text(if (draft.remindAt > 0) "修改" else "设置")
-                }
-                if (draft.remindAt > 0) {
-                    Spacer(Modifier.padding(start = 6.dp))
-                    TextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0, repeat = 0) } }) {
-                        Text("清除", color = MaterialTheme.colorScheme.error)
+                Column(Modifier.padding(14.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            WblSectionHead("提醒", Icons.Outlined.Notifications, MaterialTheme.typography.titleSmall)
+                            Text(
+                                if (draft.remindAt > 0) TimeFmt.remind(draft.remindAt)
+                                else "到时弹出通知提醒",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(onClick = { showPicker = true }) {
+                            Text(if (draft.remindAt > 0) "修改" else "设置")
+                        }
+                        if (draft.remindAt > 0) {
+                            Spacer(Modifier.padding(start = 6.dp))
+                            TextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0, repeat = 0) } }) {
+                                Text("清除", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
                     }
-                }
-            }
-            // ── 重复（仅设置了提醒时间时可选）：每天/每周/每月，完成本期后自动滚动到下一期 ──
-            if (draft.remindAt > 0) {
-                Spacer(Modifier.height(10.dp))
-                WblSectionHead("重复", Icons.Outlined.Refresh, MaterialTheme.typography.titleSmall)
-                Text(
-                    "勾选完成后自动滚动到下一周期，保持待办",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    RepeatRule.OPTIONS.forEach { (v, label) ->
-                        FilterChip(
-                            selected = draft.repeat == v,
-                            onClick = { vm.updateDraft { it.copy(repeat = v) } },
-                            label = { Text(label) }
+                    // ── 重复（仅设置了提醒时间时可选）：每天/每周/每月，完成本期后自动滚动到下一期 ──
+                    if (draft.remindAt > 0) {
+                        Spacer(Modifier.height(10.dp))
+                        WblSectionHead("重复", Icons.Outlined.Refresh, MaterialTheme.typography.titleSmall)
+                        Text(
+                            "勾选完成后自动滚动到下一周期，保持待办",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RepeatRule.OPTIONS.forEach { (v, label) ->
+                                FilterChip(
+                                    colors = wblChipColors(),
+                                    selected = draft.repeat == v,
+                                    onClick = { vm.updateDraft { it.copy(repeat = v) } },
+                                    label = { Text(label) }
+                                )
+                            }
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = { vm.saveDraft() },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) {
-                Icon(Icons.Filled.Check, null, Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(if (isNew) "保存" else "保存修改", style = MaterialTheme.typography.titleMedium)
-            }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+        } // 滚动区结束
+
+        // ⑥ 底部常驻保存栏：任何滚动位置都可见，无需翻到页尾保存
+        Button(
+            onClick = { vm.saveDraft() },
+            modifier = Modifier.padding(horizontal = 16.dp)
+                .fillMaxWidth().height(52.dp)
+        ) {
+            Icon(Icons.Filled.Check, null, Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(if (isNew) "保存" else "保存修改", style = MaterialTheme.typography.titleMedium)
         }
+        Spacer(Modifier.height(10.dp))
+        } // 外层 Column 结束
     }
     }
 

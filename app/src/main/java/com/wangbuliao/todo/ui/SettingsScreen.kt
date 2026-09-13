@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Info
@@ -262,8 +263,8 @@ fun SettingsScreen(vm: MainViewModel) {
                     Column(Modifier.weight(1f)) {
                         Text("通知栏待办置顶栏")
                         Text(
-                            if (pinEnabled) "已开启：待办速览常驻通知栏最上方"
-                            else "开启后未完成数量与下一个提醒常驻通知栏顶部",
+                            if (pinEnabled) "已开启：待办明细常驻通知栏最上方（下拉可展开清单）"
+                            else "开启后待办明细常驻通知栏顶部；开启时自动合并「后台保活」通知，避免两条重复",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -272,7 +273,15 @@ fun SettingsScreen(vm: MainViewModel) {
                         checked = pinEnabled,
                         onCheckedChange = { on ->
                             Prefs.setPinNotif(on)
-                            if (on) PinNotifService.start(ctx) else PinNotifService.stop(ctx)
+                            if (on) {
+                                PinNotifService.start(ctx)
+                                // 去重：置顶栏本身就是前台服务已承担保活，收起第二条常驻通知
+                                KeepAliveService.stop(ctx)
+                            } else {
+                                PinNotifService.stop(ctx)
+                                // 置顶栏关闭后按开关状态恢复保活通知
+                                KeepAliveService.refresh(ctx)
+                            }
                         }
                     )
                 }
@@ -295,8 +304,12 @@ fun SettingsScreen(vm: MainViewModel) {
                         Column(Modifier.weight(1f)) {
                             Text("保活守护服务")
                             Text(
-                                if (keepAlive) "运行中：前台服务常驻，最大限度防止被系统杀后台"
-                                else "开启后应用常驻后台，提醒不漏发",
+                                when {
+                                    keepAlive && pinEnabled ->
+                                        "已合并到置顶栏：置顶通知同属前台服务已兼顾保活，不再显示第二条通知"
+                                    keepAlive -> "运行中：前台服务常驻，最大限度防止被系统杀后台"
+                                    else -> "开启后应用常驻后台，提醒不漏发"
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -321,7 +334,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                 if (ignoring) "✓ 已忽略电池优化（保活效果最佳）"
                                 else "未加白名单：系统省电时可能杀掉后台",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (ignoring) MaterialTheme.colorScheme.primary
+                                color = if (ignoring) wblAccentColor()
                                 else MaterialTheme.colorScheme.error
                             )
                         }
@@ -368,7 +381,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         Text(
                             ringName,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = wblAccentColor()
                         )
                         Text(
                             "提醒到期：横幅弹出 + 铃声 + 震动；通知栏可直接「完成 / 10分钟后再提醒」",
@@ -490,7 +503,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         if (bk.target == "cloud") {
                             Spacer(Modifier.height(8.dp))
                             Text(msg, style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary)
+                                color = wblAccentColor())
                         }
                     }
                 }
@@ -545,7 +558,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         if (bk.target == "local") {
                             Spacer(Modifier.height(8.dp))
                             Text(msg, style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary)
+                                color = wblAccentColor())
                         }
                     }
                 }
@@ -606,7 +619,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     up.message?.let {
                         Spacer(Modifier.height(8.dp))
                         Text(it, style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary)
+                            color = wblAccentColor())
                     }
                 }
             }
@@ -628,7 +641,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             Text(
                                 if (notifGranted) "已授予" else "未授予，提醒将无法弹出",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (notifGranted) MaterialTheme.colorScheme.primary
+                                color = if (notifGranted) wblAccentColor()
                                 else MaterialTheme.colorScheme.error
                             )
                         }
@@ -650,7 +663,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                 if (exact) "已允许（提醒准点触发）"
                                 else "未允许（提醒可能延迟几分钟）",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (exact) MaterialTheme.colorScheme.primary
+                                color = if (exact) wblAccentColor()
                                 else MaterialTheme.colorScheme.error
                             )
                         }
@@ -693,6 +706,35 @@ fun SettingsScreen(vm: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(Modifier.height(8.dp))
+                    // 官网入口：点击用浏览器打开官网（下载/版本历史/网盘备份）
+                    Row(
+                        Modifier.fillMaxWidth().clickable {
+                            try {
+                                ctx.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://onono2012.github.io/wangbuliao-todo/")
+                                    )
+                                )
+                            } catch (_: Exception) {
+                            }
+                        },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Outlined.Public, null,
+                            Modifier.size(18.dp), tint = wblAccentColor()
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("官网", color = wblAccentColor())
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "onono2012.github.io/wangbuliao-todo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

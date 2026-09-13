@@ -33,20 +33,23 @@ class PinNotifService : Service() {
     override fun onCreate() {
         super.onCreate()
         Notif.ensureChannels(this)
-        // 先以占位内容进入前台（5 秒规则），再异步刷新计数
-        startForegroundCompat(buildNotification(pendingCount = -1, next = null))
+        // 先以占位内容进入前台（5 秒规则），再异步刷新明细
+        startForegroundCompat(buildNotification(null))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         scope.launch {
             try {
-                val tasks = TaskRepo.tasks()
-                val pending = tasks.count { !it.done }
-                // 最近一条未过期或已过期未完成的提醒
-                val next = tasks.filter { !it.done && it.remindAt > 0 }
-                    .minByOrNull { it.remindAt }
+                // 待办明细（展开可见）：置顶 > 紧急 > 提醒时间升序 > 创建时间倒序
+                val pending = TaskRepo.tasks().filter { !it.done }
+                    .sortedWith(
+                        compareByDescending<Task> { it.pinned }
+                            .thenByDescending { it.urgent }
+                            .thenBy { if (it.remindAt > 0) it.remindAt else Long.MAX_VALUE }
+                            .thenByDescending { it.createdAt }
+                    )
                 val nm = getSystemService(NotificationManager::class.java)
-                nm?.notify(NOTIF_ID, buildNotification(pending, next))
+                nm?.notify(NOTIF_ID, buildNotification(pending))
             } catch (e: Exception) {
                 Log.e(TAG, "refresh failed", e)
             }
@@ -54,7 +57,8 @@ class PinNotifService : Service() {
         return START_STICKY
     }
 
-    private fun buildNotification(pendingCount: Int, next: Task?): android.app.Notification {
+    /** pending: 排序后的未完成清单；null = 占位（正在同步） */
+    private fun buildNotification(pending: List<Task>?): android.app.Notification {
         val open = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -62,15 +66,17 @@ class PinNotifService : Service() {
             this, 7, open,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val count = pending?.size ?: -1
+        val next = pending?.firstOrNull { it.remindAt > 0 }
         val text = when {
-            pendingCount < 0 -> "正在同步…"
-            pendingCount == 0 -> "全部办完了，点一下记点新东西 ✍"
-            next != null -> "还有 $pendingCount 条未完成 · 下一个提醒 ${TimeFmt.remind(next.remindAt)}"
-            else -> "还有 $pendingCount 条未完成"
+            count < 0 -> "正在同步…"
+            count == 0 -> "全部办完了 ✨ 点一下记点新东西"
+            next != null -> "$count 条待办 · 最近提醒 ${TimeFmt.remind(next.remindAt)}"
+            else -> "$count 条待办 · 下拉展开看明细"
         }
-        return NotificationCompat.Builder(this, Notif.CH_PIN)
+        val b = NotificationCompat.Builder(this, Notif.CH_PIN)
             .setSmallIcon(R.drawable.ic_stat_check)
-            .setContentTitle("📌 忘不了 · 待办置顶")
+            .setContentTitle("📌 忘不了 · 待办速览")
             .setContentText(text)
             .setContentIntent(pi)
             .setOngoing(true)
@@ -81,7 +87,32 @@ class PinNotifService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
+        // 展开明细：最多 6 条，标注 置顶/紧急/提醒时间
+        if (pending != null && pending.isNotEmpty()) {
+            val inbox = NotificationCompat.InboxStyle()
+                .setBigContentTitle("📌 待办 $count 条")
+            pending.take(6).forEach { t ->
+                inbox.addLine(detailLine(t))
+            }
+            inbox.setSummaryText(
+                if (count > 6) "…等 $count 条 · 点按打开 App" else "点按打开 App"
+            )
+            b.setStyle(inbox)
+        }
+        return b.build()
+    }
+
+    private fun detailLine(t: Task): String = buildString {
+        append(
+            when {
+                t.pinned -> "📌 "
+                t.urgent -> "🔥 "
+                t.remindAt > 0 -> "⏰ "
+                else -> "· "
+            }
+        )
+        append(t.title.ifBlank { "（无标题）" })
+        if (t.remindAt > 0) append("　${TimeFmt.remind(t.remindAt)}")
     }
 
     private fun startForegroundCompat(n: android.app.Notification) {
