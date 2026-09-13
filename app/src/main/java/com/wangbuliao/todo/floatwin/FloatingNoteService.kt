@@ -404,7 +404,9 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
     private fun launchMedia(action: String) {
         try {
             val i = Intent(this, FloatMediaActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                // v1.5.4：MULTIPLE_TASK 配合 manifest 空 taskAffinity，
+                // 每次采集都进独立任务栈，完成后不回落主 App 界面
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
                 putExtra(FloatMediaActivity.EXTRA_ACTION, action)
             }
             startActivity(i)

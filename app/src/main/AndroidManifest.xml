@@ -38,11 +38,15 @@
             </intent-filter>
         </activity>
 
-        <!-- v1.4.0：悬浮窗媒体采集透明页（拍照/相册/录音 → 随手记） -->
+        <!-- v1.4.0：悬浮窗媒体采集透明页（拍照/相册/录音 → 随手记）
+             v1.5.4：独立 taskAffinity 空串——不再并入主 App 任务栈，
+             拍照/选图/录音完成后 finish() 直接回到用户原界面，悬浮球保持可见 -->
         <activity
             android:name=".floatwin.FloatMediaActivity"
             android:exported="false"
             android:excludeFromRecents="true"
+            android:autoRemoveFromRecents="true"
+            android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- 随手记悬浮窗服务 -->
