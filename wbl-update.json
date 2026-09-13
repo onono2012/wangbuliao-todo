@@ -1,18 +1,18 @@
 {
-  "versionCode": 10401,
-  "versionName": "1.4.1",
+  "versionCode": 10500,
+  "versionName": "1.5.0",
   "force": true,
-  "desc": "## 更新内容\n- **数据备份/恢复（WebDAV）**：设置页新增「数据备份」卡片，可配置任意 WebDAV 服务器（地址/账号/密码仅存本机），一键备份全部数据（任务数据库 + 照片主题）；从备份恢复前自动先备份当前数据（后悔药），恢复完成后自动重启应用生效\n- **崩溃监控**：应用发生异常时自动记录崩溃日志（仅异常堆栈与设备/版本信息，不采集任务内容），下次启动弹窗提示并可一键复制反馈；已配置 WebDAV 时检查更新会顺带匿名上报崩溃日志，帮助开发者更快定位问题\n- **更新线路优化**：检查更新/下载线路重排——官网直链第一位、GitHub 直连次位、镜像加速兜底，移除长期不可达线路，更新成功率更高\n- **升级安装更稳**：发布签名统一为标准可复现证书，后续版本覆盖升级不再因签名差异被系统拒绝\n- **可读性保障固化**：顶栏文字黑白自动选择与对比度补偿逻辑固化为独立算法模块，并通过 21 项单元测试（含十套主题真实渐变回归），后续版本主题可读性不再回退\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。旧版本用户可通过 App 内「检查更新」直接覆盖升级，数据自动保留。",
-  "sha256": "142d195f9a3573da89fc0db6a84d14d8a192477099d1958d94166581912941f9",
-  "size": 10019633,
-  "fileName": "wbl-v1.4.1-vc10401.apk",
+  "desc": "# 忘不了 v1.5.0 更新说明\n\n## 更新内容\n- **桌面小组件**：长按桌面 → 卡片 → 搜索「忘不了」即可添加。4×2 可调大小卡片，桌面直接查看待办清单\n- **快速勾选**：点任务左侧圆圈即标记已办，置顶通知/保活通知同步刷新，无需打开应用\n- **快速新增**：点小组件右上角「+」直达新建任务页，随手记一笔更快\n- **实时刷新**：应用内新增/编辑/删除/勾选任务后，小组件即时同步；开机/恢复数据后自动刷新\n- 清单排序与应用内一致：置顶 > 紧急 > 提醒时间 > 创建时间\n\n## 安装说明\n下载 APK 后点击安装（需允许「安装未知应用」权限）。旧版本用户可通过 App 内「检查更新」直接覆盖升级，数据自动保留。升级后长按桌面空白处 → 卡片 → 找到「忘不了」添加到桌面。",
+  "sha256": "32842907b8352a66655d5f1ba8ca22ba0b062cc7ceb2ab16da776bed39ababca",
+  "size": 10032173,
+  "fileName": "wbl-v1.5.0-vc10500.apk",
   "routes": [
     "https://onono2012.github.io/wangbuliao-todo/wbl-latest.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.1/wbl-v1.4.1-vc10401.apk",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.1/wbl-v1.4.1-vc10401.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.1/wbl-v1.4.1-vc10401.apk",
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560301321",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.4.1/wbl-v1.4.1-vc10401.apk"
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.0/wbl-v1.5.0-vc10500.apk",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.0/wbl-v1.5.0-vc10500.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.0/wbl-v1.5.0-vc10500.apk",
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/560347620",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.0/wbl-v1.5.0-vc10500.apk"
   ],
-  "publishedAt": "2026-09-13T01:16:16+0000"
+  "publishedAt": "2026-09-13T01:51:57+0000"
 }
