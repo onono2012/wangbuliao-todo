@@ -46,6 +46,71 @@ class FloatingNoteService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var panelOpen = false
 
+    // ── v1.5.4：10 秒无操作自动贴边（半隐藏 + 变淡，触摸即恢复） ──
+    private val dockHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val dockRunnable = Runnable { dockToEdge() }
+    private var docked = false
+    private var dockSide = 1          // -1 左边缘 / 1 右边缘
+    private var bubbleAnim: android.animation.ValueAnimator? = null
+
+    private fun scheduleDock() {
+        dockHandler.removeCallbacks(dockRunnable)
+        if (!panelOpen) dockHandler.postDelayed(dockRunnable, IDLE_DOCK_MS)
+    }
+
+    private fun cancelDock() {
+        dockHandler.removeCallbacks(dockRunnable)
+    }
+
+    /** 贴边：悬浮球一半移出屏幕侧边并变淡 */
+    private fun dockToEdge() {
+        val v = bubbleView ?: return
+        val p = bubbleParams ?: return
+        if (docked || panelOpen) return
+        val w = resources.displayMetrics.widthPixels
+        val onLeft = p.x + v.width / 2 < w / 2
+        dockSide = if (onLeft) -1 else 1
+        val targetX = if (onLeft) -v.width / 2 else w - v.width / 2
+        docked = true
+        animateBubble(p.x, targetX, DOCK_ALPHA)
+    }
+
+    /** 恢复：立即滑回完全可见位置并恢复不透明（触摸场景需即时响应，避免与拖拽动画冲突） */
+    private fun undock() {
+        val v = bubbleView ?: return
+        val p = bubbleParams ?: return
+        if (!docked) return
+        docked = false
+        bubbleAnim?.cancel()
+        val w = resources.displayMetrics.widthPixels
+        p.x = if (dockSide < 0) dp(4) else w - v.width - dp(4)
+        v.alpha = 1f
+        try {
+            wm.updateViewLayout(v, p)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun animateBubble(fromX: Int, toX: Int, toAlpha: Float) {
+        val v = bubbleView ?: return
+        val p = bubbleParams ?: return
+        bubbleAnim?.cancel()
+        val fromAlpha = v.alpha
+        bubbleAnim = android.animation.ValueAnimator.ofInt(fromX, toX).apply {
+            duration = 220
+            addUpdateListener { a ->
+                val f = a.animatedFraction
+                p.x = a.animatedValue as Int
+                v.alpha = fromAlpha + (toAlpha - fromAlpha) * f
+                try {
+                    wm.updateViewLayout(v, p)
+                } catch (_: Exception) {
+                }
+            }
+            start()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -123,6 +188,8 @@ class FloatingNoteService : Service() {
             wm.addView(v, p)
             bubbleView = v
             bubbleParams = p
+            // 启动后即开始 10 秒无操作计时
+            scheduleDock()
         } catch (e: Exception) {
             Log.e(TAG, "addBubble failed", e)
         }
@@ -205,10 +272,15 @@ class FloatingNoteService : Service() {
             private var startX = 0
             private var startY = 0
             private var moved = false
+            private var wasDocked = false
 
             override fun onTouch(view: View, e: MotionEvent): Boolean {
                 when (e.action) {
                     MotionEvent.ACTION_DOWN -> {
+                        // 触摸即打断贴边计时；处于贴边态时本次触摸只负责恢复
+                        cancelDock()
+                        wasDocked = docked
+                        if (wasDocked) undock()
                         downX = e.rawX
                         downY = e.rawY
                         startX = p.x
@@ -231,7 +303,9 @@ class FloatingNoteService : Service() {
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        if (!moved) {
+                        if (wasDocked && !moved) {
+                            // 贴边态下首次点按只负责恢复，不打开面板
+                        } else if (!moved) {
                             togglePanel()
                         } else {
                             // 吸附屏幕左右边缘
@@ -244,6 +318,7 @@ class FloatingNoteService : Service() {
                             com.wangbuliao.todo.util.Prefs.floatX = p.x
                             com.wangbuliao.todo.util.Prefs.floatY = p.y
                         }
+                        scheduleDock()
                         return true
                     }
                 }
@@ -258,6 +333,7 @@ class FloatingNoteService : Service() {
 
     private fun openPanel() {
         try {
+            cancelDock()
             if (panelView == null) {
                 val v = LayoutInflater.from(this).inflate(R.layout.float_panel, null)
                 applyPanelTheme(v)
@@ -337,6 +413,8 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
             }
             bubbleView?.visibility = View.VISIBLE
             panelOpen = false
+            // 面板收起后重新开始 10 秒无操作计时
+            scheduleDock()
         } catch (e: Exception) {
             Log.e(TAG, "closePanel failed", e)
         }
@@ -427,6 +505,8 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
 
     override fun onDestroy() {
         super.onDestroy()
+        dockHandler.removeCallbacksAndMessages(null)
+        bubbleAnim?.cancel()
         try {
             bubbleView?.let { wm.removeView(it) }
             panelView?.let { wm.removeView(it) }
@@ -444,6 +524,11 @@ com.wangbuliao.todo.reminder.KeepAliveService.refresh(applicationContext)
     companion object {
         private const val TAG = "WblFloat"
         private const val NOTIF_ID = 9001
+
+        /** 无操作自动贴边延时（毫秒） */
+        private const val IDLE_DOCK_MS = 10_000L
+        /** 贴边后悬浮球透明度（半隐藏变淡） */
+        private const val DOCK_ALPHA = 0.35f
 
         fun canDraw(ctx: Context): Boolean = Settings.canDrawOverlays(ctx)
 

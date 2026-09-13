@@ -263,8 +263,8 @@ fun SettingsScreen(vm: MainViewModel) {
                     Column(Modifier.weight(1f)) {
                         Text("通知栏待办置顶栏")
                         Text(
-                            if (pinEnabled) "已开启：待办明细常驻通知栏最上方（下拉可展开清单）"
-                            else "开启后待办明细常驻通知栏顶部；开启时自动合并「后台保活」通知，避免两条重复",
+                            if (pinEnabled) "已开启：待办常驻通知栏最上方，折叠显示前 2 条，点右侧箭头展开最多 8 条明细"
+                            else "开启后待办常驻通知栏顶部，可直接展开查看未完成清单",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -275,11 +275,12 @@ fun SettingsScreen(vm: MainViewModel) {
                             Prefs.setPinNotif(on)
                             if (on) {
                                 PinNotifService.start(ctx)
-                                // 去重：置顶栏本身就是前台服务已承担保活，收起第二条常驻通知
-                                KeepAliveService.stop(ctx)
+                                // v1.5.4：置顶栏已是普通通知，保活由守护服务承担；
+                                // 同步刷新守护通知（置顶栏开启时它自动极简化）
+                                KeepAliveService.refresh(ctx)
                             } else {
                                 PinNotifService.stop(ctx)
-                                // 置顶栏关闭后按开关状态恢复保活通知
+                                // 置顶栏关闭后守护通知恢复完整明细
                                 KeepAliveService.refresh(ctx)
                             }
                         }
@@ -306,7 +307,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             Text(
                                 when {
                                     keepAlive && pinEnabled ->
-                                        "已合并到置顶栏：置顶通知同属前台服务已兼顾保活，不再显示第二条通知"
+                                        "运行中：前台服务常驻防杀后台（通知已简化，待办明细见置顶栏）"
                                     keepAlive -> "运行中：前台服务常驻，最大限度防止被系统杀后台"
                                     else -> "开启后应用常驻后台，提醒不漏发"
                                 },

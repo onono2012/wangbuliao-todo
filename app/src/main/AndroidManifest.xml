@@ -59,16 +59,6 @@
                 android:value="floating quick-note bubble for capturing notes over other apps" />
         </service>
 
-        <!-- 待办置顶通知服务 -->
-        <service
-            android:name=".reminder.PinNotifService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="persistent pinned todo summary notification" />
-        </service>
-
         <!-- 后台保活服务（状态通知显示未完成事项） -->
         <service
             android:name=".reminder.KeepAliveService"
