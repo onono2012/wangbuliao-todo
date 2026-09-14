@@ -245,7 +245,8 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
                 val total = pending + doneN
                 Card(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                    colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                    border = wblCardBorder()
                 ) {
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
@@ -398,12 +399,13 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
         colors = if (highlight) {
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                    alpha = if (wblHasPhotoBg()) 0.78f else 0.62f
+                    alpha = if (wblHasPhotoBg()) 0.66f else 0.55f
                 )
             )
         } else {
             CardDefaults.cardColors(containerColor = wblCardColor())
-        }
+        },
+        border = wblCardBorder()
     ) {
         Row(
             Modifier.fillMaxWidth()

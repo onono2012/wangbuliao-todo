@@ -144,7 +144,8 @@ fun ThemeScreen(vm: MainViewModel) {
                 }
                 Card(
                     Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                    colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                    border = wblCardBorder()
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
@@ -240,7 +241,8 @@ fun ThemeScreen(vm: MainViewModel) {
                 // ── 自定义照片主题：上传/更换/移除 ──
                 Card(
                     Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                    colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                    border = wblCardBorder()
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         WblOutlinedButton(

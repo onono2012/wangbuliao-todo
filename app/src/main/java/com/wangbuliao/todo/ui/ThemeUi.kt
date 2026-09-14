@@ -288,24 +288,30 @@ private fun decodePhotoBg(path: String): android.graphics.Bitmap? {
     }
 }
 
-/** 卡片背景色：半透明 surface，透出主题 wash / 照片背景 */
+/** 卡片半透明度：毛玻璃观感（背景可透出）同时保住文字对比度 */
 @Composable
-fun wblCardColor(): Color {
+fun wblCardAlpha(): Float {
     val spec = LocalWblTheme.current
     val photo = spec.bgRes != null || spec.photoPath != null
-    return MaterialTheme.colorScheme.surface.copy(alpha = if (photo) 0.92f else 0.86f)
+    return if (photo) 0.60f else 0.52f
 }
 
-/** 有效卡片背景 ARGB（surface@86% 叠 background 的近似，供对比度计算） */
+@Composable
+fun wblCardColor(): Color {
+    return MaterialTheme.colorScheme.surface.copy(alpha = wblCardAlpha())
+}
+
+/** 毛玻璃卡片统一描边（与导航栏/按钮同款 hairline） */
+@Composable
+fun wblCardBorder(): BorderStroke = BorderStroke(1.dp, wblGlassHairline())
+
+/** 有效卡片背景 ARGB（surface@alpha 叠 background 的近似，供对比度计算） */
 @Composable
 fun wblEffectiveCardArgb(): Int {
     val s = MaterialTheme.colorScheme
-    val spec = LocalWblTheme.current
-    val photo = spec.bgRes != null || spec.photoPath != null
-    val alpha = if (photo) 0.92f else 0.86f
     // 照片主题背景≈深色遮罩后的照片，按 scheme.background 近似即可
     return ColorContrast.blendArgb(
-        s.surface.toArgb(), s.background.toArgb(), alpha
+        s.surface.toArgb(), s.background.toArgb(), wblCardAlpha()
     )
 }
 

@@ -149,6 +149,7 @@ fun CalendarScreen(vm: MainViewModel, ui: UiState) {
                     Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = card),
+                    border = wblCardBorder(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(Modifier.padding(vertical = 6.dp)) {
@@ -306,6 +307,7 @@ private fun DayDetail(
         modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = card),
+        border = wblCardBorder(),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -368,7 +370,7 @@ private fun DayDetail(
                             Modifier
                                 .fillMaxWidth()
                                 .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f),
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { onTaskClick(t) }

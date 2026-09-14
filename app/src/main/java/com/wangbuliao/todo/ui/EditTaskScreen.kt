@@ -339,7 +339,8 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             // ── 分类（卡片分组）──
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     WblSectionHead("分类", Icons.Outlined.Category, MaterialTheme.typography.titleSmall)
@@ -372,7 +373,8 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             // ── 标记（卡片分组：紧急 + 置顶）──
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
                     Row(
@@ -416,7 +418,8 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             // ── 附件（卡片分组：语音 + 图片）──
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
             AudioSection(
@@ -491,7 +494,8 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             // ── 提醒（卡片分组：提醒时间 + 重复规则）──
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(

@@ -206,7 +206,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("随手记悬浮窗", Icons.Outlined.PictureInPictureAlt)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
@@ -253,7 +254,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("置顶通知", Icons.Outlined.PushPin)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
@@ -297,7 +299,8 @@ fun SettingsScreen(vm: MainViewModel) {
             }
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -370,7 +373,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("提醒铃声", Icons.Outlined.MusicNote)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(14.dp),
@@ -437,7 +441,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("云端备份", Icons.Outlined.Cloud)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     val bk by vm.backup.collectAsState()
@@ -513,7 +518,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("本地备份", Icons.Outlined.Folder)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     val bk by vm.backup.collectAsState()
@@ -570,7 +576,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("在线更新", Icons.Outlined.CloudDownload)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Text(
@@ -628,7 +635,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("提醒权限", Icons.Outlined.VerifiedUser)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     // 通知权限
@@ -692,7 +700,8 @@ fun SettingsScreen(vm: MainViewModel) {
             SectionTitle("关于", Icons.Outlined.Info)
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = wblCardColor())
+                colors = CardDefaults.cardColors(containerColor = wblCardColor()),
+                border = wblCardBorder()
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Text("忘不了 · 待办记事本")
