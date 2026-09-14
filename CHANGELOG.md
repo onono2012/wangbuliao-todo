@@ -1,5 +1,15 @@
 # 更新日志
 
+## v1.5.8 (10508) — 卡片毛玻璃通透升级
+
+- 🧊 卡片毛玻璃化：wblCardColor alpha 0.92/0.86 → 0.60/0.52（照片/渐变主题），日历月视图、当日任务详情、待办任务卡、编辑页、设置页、主题页共 19 处 Card 统一，壁纸与动态主题背景自然透出，告别大块死黑
+- ✨ 新增 wblCardBorder()：1dp hairline 细描边（与导航栏/玻璃按钮同款），所有卡片轮廓清晰、层次分明
+- 🔍 可读性保障：wblEffectiveCardArgb 按新 alpha 重算有效底色，强调色对比度自适应保持准确；紧急任务卡 errorContainer 0.78/0.62→0.66/0.55、当日详情任务行 surfaceVariant 0.4→0.32 同步玻璃质感
+
+### 真机验证（realme RMX3888, ColorOS/Android 16）
+- 像素级验证：日历页月历卡区域亮度 18→77、变化度 std 0→67（壁纸绿光透出，不再是死黑）；待办页任务卡同步通透
+- 目视确认：日历/待办页卡片通透、文字清晰可读
+
 ## v1.5.7 (10507) — 毛玻璃 UI 体系 + 在线主题下载加固 + 3 套新动态主题
 
 - 🧊 毛玻璃 UI 体系：WblButton/WblTextButton/WblOutlinedButton 全局替换 47 处，半透明毛玻璃按钮随主题 tint 变色；WblGlassNavBar 底部导航栏跟随主题变色；5 个顶栏全透明化（wblTopBarModifier）
