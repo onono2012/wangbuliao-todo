@@ -25,8 +25,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -70,6 +71,7 @@ import com.wangbuliao.todo.ui.EditTaskScreen
 import com.wangbuliao.todo.ui.MainViewModel
 import com.wangbuliao.todo.ui.Screen
 import com.wangbuliao.todo.ui.SettingsScreen
+import com.wangbuliao.todo.ui.ThemeGridScreen
 import com.wangbuliao.todo.ui.ThemeScreen
 import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
@@ -208,8 +210,8 @@ class MainActivity : ComponentActivity() {
                                         NavItem(screen, Screen.Calendar, Icons.Outlined.CalendarMonth, "日历") {
                                             vm.goScreen(Screen.Calendar)
                                         }
-                                        NavItem(screen, Screen.Theme, Icons.Outlined.Palette, "主题") {
-                                            vm.goScreen(Screen.Theme)
+                                        NavItem(screen, Screen.Finder, Icons.Outlined.CloudDownload, "发现") {
+                                            vm.goScreen(Screen.Finder)
                                         }
                                         NavItem(screen, Screen.Settings, Icons.Outlined.Settings, "设置") {
                                             vm.goScreen(Screen.Settings)
@@ -227,6 +229,10 @@ class MainActivity : ComponentActivity() {
                                         Screen.List -> TaskListScreen(vm, ui)
                                         Screen.Calendar -> CalendarScreen(vm, ui)
                                         Screen.Theme -> ThemeScreen(vm)
+                                        Screen.Finder -> ThemeGridScreen(
+                                            onThemeSelected = { id -> Prefs.setTheme(id); vm.goScreen(Screen.List) },
+                                            onBack = { vm.goScreen(Screen.Theme) }
+                                        )
                                         Screen.Settings -> SettingsScreen(vm)
                                         else -> {}
                                     }

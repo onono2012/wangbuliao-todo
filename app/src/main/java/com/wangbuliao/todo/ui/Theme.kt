@@ -29,13 +29,6 @@ fun WblTheme(content: @Composable () -> Unit) {
     }
 }
 
-/** 当前是否为深色渲染（含强制深色主题） */
-@Composable
-fun wblIsDark(): Boolean {
-    val spec = LocalWblTheme.current
-    return spec.forceDark || isSystemInDarkTheme()
-}
-
 /** 分类标签颜色：预设分类固定色，自定义分类按名称哈希取色相 */
 fun categoryColor(name: String): Color = when (name) {
     "工作" -> Color(0xFF1565C0)

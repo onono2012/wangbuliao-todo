@@ -134,7 +134,17 @@ fun wblTopBarModifier(): Modifier {
 fun WblScreenBackground(content: @Composable BoxScope.() -> Unit) {
     val spec = LocalWblTheme.current
     val dark = wblIsDark()
+    // 动态主题 WebView 层：内置玻璃雨珠走 assets；在线下载的动态主题走 filesDir 本地目录
+    val dynUrl = when {
+        spec.id == "glass-rain" -> "file:///android_asset/glass-rain/index.html"
+        spec.dynamicDir != null -> "file://" + spec.dynamicDir + "/index.html"
+        else -> null
+    }
     Box(Modifier.fillMaxSize()) {
+        // 动态主题：最底层放置 WebView 动画层
+        if (dynUrl != null) {
+            GlassRainBackground(dynUrl, Modifier.fillMaxSize())
+        }
         when {
             spec.photoPath != null -> {
                 val bmp = remember(spec.photoPath) { decodePhotoBg(spec.photoPath) }

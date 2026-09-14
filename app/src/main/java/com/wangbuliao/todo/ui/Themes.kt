@@ -1,67 +1,93 @@
 package com.wangbuliao.todo.ui
 
-import androidx.compose.material3.darkColorScheme
 import com.wangbuliao.todo.R
+import android.graphics.drawable.GradientDrawable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.wangbuliao.todo.util.Prefs
 import java.io.File
 
-/**
- * 主题定义：每套主题含浅色/深色调色板 + 可选渐变（顶栏/悬浮球用）。
- * id 持久化于 Prefs；默认「炫彩」。
- * 自定义照片主题（id="custom"）：用户自选照片动态构建，主色从照片提取。
- */
+/** Light / Dark theme color specs */
+data class ThemeColors(
+    val light: ColorScheme,
+    val dark: ColorScheme
+)
+
+/** One spec for a whole theme (light + dark) */
 data class WblThemeSpec(
     val id: String,
     val name: String,
     val desc: String,
-    val light: androidx.compose.material3.ColorScheme,
-    val dark: androidx.compose.material3.ColorScheme,
-    /** 主题渐变（null = 纯色顶栏，用 primary） */
+    val light: ColorScheme,
+    val dark: ColorScheme,
+    /** Optional pre-computed gradient stops for the full-screen wash */
     val gradient: List<Color>? = null,
-    /** 强制深色（极夜黑/鎏金黑主题） */
+    /** If true, force dark mode regardless of system setting */
     val forceDark: Boolean = false,
-    /** 设置页预览色 */
-    val preview: List<Color>,
-    /** 全屏照片背景（drawable 资源；null = 主题色 wash 渐变背景） */
-    val bgRes: Int? = null,
-    /** 全屏照片背景（文件路径，自定义照片主题用；优先级高于 bgRes） */
-    val photoPath: String? = null,
-    /** 主题预览图（设置页圆形预览；null = 用 preview 渐变色点 / photoPath） */
+    /** Drawable resource for preview (photo-based themes) */
     val previewRes: Int? = null,
-    /** 悬浮球圆形贴图（drawable；null = 渐变球 / photoPath 圆图） */
-    val bubbleRes: Int? = null
-)
+    /** Full-screen photo background resource */
+    val bgRes: Int? = null,
+    /** Bubble tint for FAB / floating note */
+    val bubbleRes: Int? = null,
+    /** Photo path for custom photo theme */
+    val photoPath: String? = null,
+    /** 在线动态主题：本地资源目录（含 index.html），由 GlassRainBackground 加载 */
+    val dynamicDir: String? = null
+) {
+    val preview: List<Color> get() = gradient ?: listOf(Color.Unspecified)
+}
 
+/** Helper to build a light ColorScheme from hex strings */
 private fun light(
-    primary: Long, container: Long, secondary: Long, tertiary: Long, bg: Long = 0xFFFDFBFF
-) = lightColorScheme(
+    primary: Long,
+    surface: Long,
+    onPrimaryContainer: Long,
+    onSecondaryContainer: Long,
+    tertiary: Long = 0xFF616161,
+    bg: Long = 0xFFFFFFFF
+): ColorScheme = lightColorScheme(
     primary = Color(primary),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(container),
-    onPrimaryContainer = Color(0xFF101010),
-    secondary = Color(secondary),
-    secondaryContainer = Color(container),
-    onSecondaryContainer = Color(0xFF101010),
+    secondary = Color(surface),
     tertiary = Color(tertiary),
     background = Color(bg),
-    surface = Color(bg)
+    surface = Color(bg),
+    primaryContainer = Color(onPrimaryContainer).copy(alpha = 0.24f),
+    secondaryContainer = Color(onSecondaryContainer).copy(alpha = 0.24f),
+    errorContainer = Color(0xFFD32F2F).copy(alpha = 0.15f),
+    surfaceVariant = Color(bg).copy(alpha = 0.96f)
 )
 
+/** Helper to build a dark ColorScheme from hex strings */
 private fun dark(
-    primary: Long, container: Long, secondary: Long, tertiary: Long, bg: Long = 0xFF121316
-) = darkColorScheme(
+    primary: Long,
+    container: Long,
+    tertiary: Long,
+    onTertiary: Long,
+    bg: Long = 0xFF101216
+): ColorScheme = darkColorScheme(
     primary = Color(primary),
-    onPrimary = Color(0xFF101010),
-    primaryContainer = Color(container),
-    onPrimaryContainer = Color(0xFFEDEDED),
-    secondary = Color(secondary),
-    secondaryContainer = Color(container),
-    onSecondaryContainer = Color(0xFFEDEDED),
+    secondary = Color(container),
     tertiary = Color(tertiary),
     background = Color(bg),
-    surface = Color(bg)
+    surface = Color(bg),
+    primaryContainer = Color(primary).copy(alpha = 0.28f),
+    secondaryContainer = Color(container).copy(alpha = 0.22f),
+    tertiaryContainer = Color(tertiary).copy(alpha = 0.24f),
+    onPrimaryContainer = Color(onTertiary).copy(alpha = 0.12f)
 )
 
 val WBL_THEMES: List<WblThemeSpec> = listOf(
@@ -71,7 +97,6 @@ val WBL_THEMES: List<WblThemeSpec> = listOf(
         light = light(0xFF7C4DFF, 0xFFE8DEFF, 0xFF00B0FF, 0xFFE91E63),
         dark = dark(0xFFB388FF, 0xFF311B92, 0xFF80D8FF, 0xFFFF80AB),
         gradient = listOf(Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00BCD4)),
-        preview = listOf(Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00BCD4))
     ),
     // ② 肖战：红海应援色 + 高清帅照全屏背景
     WblThemeSpec(
@@ -79,75 +104,17 @@ val WBL_THEMES: List<WblThemeSpec> = listOf(
         light = light(0xFFE60027, 0xFFFFDAD9, 0xFFC2185B, 0xFFFF6D00),
         dark = dark(0xFFFF8A80, 0xFF7F0013, 0xFFFF80AB, 0xFFFFAB91),
         gradient = listOf(Color(0xFFE60027), Color(0xFFFF5252), Color(0xFFFF8A80)),
-        preview = listOf(Color(0xFFE60027), Color(0xFFFF5252)),
         bgRes = R.drawable.xz_bg,
         previewRes = R.drawable.xz_prev,
         bubbleRes = R.drawable.xz_bubble
     ),
-    // ③ 极光：冰蓝→紫罗兰→品红 极光渐变
+    // ③ 玻璃雨珠：透明背景 Canvas粒子动画 · 默认新皮肤
     WblThemeSpec(
-        id = "aurora", name = "极光", desc = "冰蓝紫罗兰 · 极光渐变",
-        light = light(0xFF304FFE, 0xFFDEE3FF, 0xFF00ACC1, 0xFFAA00FF, bg = 0xFFFBFCFF),
-        dark = dark(0xFF8C9EFF, 0xFF1A237E, 0xFF80DEEA, 0xFFEA80FC),
-        gradient = listOf(Color(0xFF00E5FF), Color(0xFF536DFE), Color(0xFFD500F9)),
-        preview = listOf(Color(0xFF00E5FF), Color(0xFF536DFE), Color(0xFFD500F9))
-    ),
-    // ④ 暮山紫：粉紫暮色
-    WblThemeSpec(
-        id = "twilight", name = "暮山紫", desc = "粉紫暮色 · 温柔梦幻",
-        light = light(0xFF7E57C2, 0xFFEDE3FF, 0xFFEC407A, 0xFF5C6BC0, bg = 0xFFFDFAFF),
-        dark = dark(0xFFB39DDB, 0xFF4527A0, 0xFFF48FB1, 0xFF9FA8DA),
-        gradient = listOf(Color(0xFFFF6EC4), Color(0xFF7873F5)),
-        preview = listOf(Color(0xFFFF6EC4), Color(0xFF7873F5))
-    ),
-    // ⑤ 鎏金：黑金奢华（强制深色）
-    WblThemeSpec(
-        id = "gilded", name = "鎏金", desc = "黑金奢华 · 质感之夜",
-        light = dark(0xFFD4AF37, 0xFF3A2F0B, 0xFFE6C96A, 0xFFBFA15A, bg = 0xFF120E06),
-        dark = dark(0xFFD4AF37, 0xFF3A2F0B, 0xFFE6C96A, 0xFFBFA15A, bg = 0xFF120E06),
+        id = "glass-rain", name = "玻璃雨珠", desc = "深蓝黑色底 · Canvas粒子动画",
+        light = dark(0xFF64B5F6, 0xFF05070D, 0xFF90CAF4, 0xFFBBDEFB, bg = 0xFF05070D),
+        dark = dark(0xFF64B5F6, 0xFF05070D, 0xFF90CAF4, 0xFFBBDEFB, bg = 0xFF05070D),
         forceDark = true,
-        gradient = listOf(Color(0xFFBF953F), Color(0xFFFCF6BA), Color(0xFFB38728)),
-        preview = listOf(Color(0xFFBF953F), Color(0xFFFCF6BA), Color(0xFFB38728))
-    ),
-    // ⑥ 深海蓝：沉稳经典
-    WblThemeSpec(
-        id = "ocean", name = "深海蓝", desc = "沉稳专注",
-        light = light(0xFF2F5FA8, 0xFFD8E3FF, 0xFF555F71, 0xFF6E5676),
-        dark = dark(0xFFAEC6FF, 0xFF13458F, 0xFFBDC7DC, 0xFFDBBDE3),
-        gradient = listOf(Color(0xFF2F5FA8), Color(0xFF5C8AE6)),
-        preview = listOf(Color(0xFF2F5FA8), Color(0xFFAEC6FF))
-    ),
-    // ⑦ 清新绿：自然护眼
-    WblThemeSpec(
-        id = "forest", name = "清新绿", desc = "自然护眼",
-        light = light(0xFF2E7D32, 0xFFCDEBD0, 0xFF558B2F, 0xFF00796B, bg = 0xFFFBFDF9),
-        dark = dark(0xFF81C784, 0xFF1B5E20, 0xFFAED581, 0xFF80CBC4),
-        gradient = listOf(Color(0xFF43A047), Color(0xFF00897B)),
-        preview = listOf(Color(0xFF2E7D32), Color(0xFF81C784))
-    ),
-    // ⑧ 暖阳橙：活力明快
-    WblThemeSpec(
-        id = "sunset", name = "暖阳橙", desc = "活力明快",
-        light = light(0xFFEF6C00, 0xFFFFE0B2, 0xFFF4511E, 0xFFC2185B, bg = 0xFFFFFCF8),
-        dark = dark(0xFFFFB74D, 0xFFE65100, 0xFFFF8A65, 0xFFF48FB1),
-        gradient = listOf(Color(0xFFFF9800), Color(0xFFFF5722)),
-        preview = listOf(Color(0xFFEF6C00), Color(0xFFFF9800))
-    ),
-    // ⑨ 樱花粉：温柔治愈
-    WblThemeSpec(
-        id = "sakura", name = "樱花粉", desc = "温柔治愈",
-        light = light(0xFFD81B60, 0xFFFFD9E4, 0xFFAD1457, 0xFF7B1FA2, bg = 0xFFFFFBFC),
-        dark = dark(0xFFFF80AB, 0xFF880E4F, 0xFFFF80AB, 0xFFEA80FC),
-        gradient = listOf(Color(0xFFF48FB1), Color(0xFFD81B60)),
-        preview = listOf(Color(0xFFD81B60), Color(0xFFF48FB1))
-    ),
-    // ⑩ 极夜黑：纯黑省电（强制深色）
-    WblThemeSpec(
-        id = "midnight", name = "极夜黑", desc = "纯黑省电",
-        light = dark(0xFFBB86FC, 0xFF33294D, 0xFF9FA8DA, 0xFF80DEEA, bg = 0xFF0A0A0C),
-        dark = dark(0xFFBB86FC, 0xFF33294D, 0xFF9FA8DA, 0xFF80DEEA, bg = 0xFF0A0A0C),
-        forceDark = true,
-        preview = listOf(Color(0xFF0A0A0C), Color(0xFFBB86FC))
+        gradient = listOf(Color(0xFF1976D2), Color(0xFF0D47A1)),
     )
 )
 
@@ -178,9 +145,87 @@ fun customThemeSpec(): WblThemeSpec? {
         light = scheme, dark = scheme,
         forceDark = true,
         gradient = listOf(p, Color(0xFF101216)),
-        preview = listOf(p, Color(0xFF101216)),
         photoPath = path
     )
+}
+
+/** 在线主题 id 前缀：`online:<远端主题 id>`，与内置主题区分 */
+const val ONLINE_THEME_PREFIX = "online:"
+
+/** 在线主题安装根目录：filesDir/themes/ */
+fun onlineThemesRoot(): File =
+    File(com.wangbuliao.todo.AppCtx.app.filesDir, "themes")
+
+/** 单个在线主题目录 */
+fun onlineThemeDir(rawId: String): File = File(onlineThemesRoot(), rawId)
+
+/**
+ * 由本地 manifest.json 构建在线主题 spec（ThemeDownloader 下载安装后写入）。
+ * 文件缺失 / 解析失败返回 null。
+ */
+fun onlineThemeSpec(rawId: String): WblThemeSpec? {
+    if (rawId.isEmpty()) return null
+    val dir = onlineThemeDir(rawId)
+    val mf = File(dir, "manifest.json")
+    if (!mf.exists()) return null
+    return try {
+        val o = org.json.JSONObject(mf.readText())
+        val name = o.optString("name", rawId)
+        val desc = o.optString("desc", "在线主题")
+        val type = o.optString("type", "static")
+        val accent = try {
+            android.graphics.Color.parseColor(o.optString("accent", "#8AB4F8"))
+        } catch (_: Exception) {
+            0xFF8AB4F8.toInt()
+        }
+        val p = Color(accent)
+        val scheme = darkColorScheme(
+            primary = p,
+            onPrimary = Color(0xFF101010),
+            primaryContainer = p.copy(alpha = 0.35f),
+            onPrimaryContainer = Color(0xFFEDEDED),
+            secondary = p,
+            secondaryContainer = p.copy(alpha = 0.35f),
+            onSecondaryContainer = Color(0xFFEDEDED),
+            tertiary = Color(0xFFFFFFFF),
+            background = Color(0xFF101216),
+            surface = Color(0xFF101216)
+        )
+        if (type == "dynamic") {
+            val entry = o.optString("entry", "index.html")
+            if (!File(dir, entry).exists()) return null
+            WblThemeSpec(
+                id = ONLINE_THEME_PREFIX + rawId, name = name, desc = desc,
+                light = scheme, dark = scheme,
+                forceDark = true,
+                gradient = listOf(p, Color(0xFF05070D)),
+                dynamicDir = dir.absolutePath
+            )
+        } else {
+            val wallName = o.optString("wallFile", "wallpaper.jpg")
+            val wall = File(dir, wallName)
+            if (!wall.exists()) return null
+            WblThemeSpec(
+                id = ONLINE_THEME_PREFIX + rawId, name = name, desc = desc,
+                light = scheme, dark = scheme,
+                forceDark = true,
+                gradient = listOf(p, Color(0xFF101216)),
+                photoPath = wall.absolutePath
+            )
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/** 已安装的在线主题（扫描 filesDir/themes/<id>/manifest.json） */
+fun installedOnlineThemes(): List<WblThemeSpec> {
+    val root = onlineThemesRoot()
+    if (!root.isDirectory) return emptyList()
+    return (root.listFiles() ?: emptyArray())
+        .filter { it.isDirectory }
+        .sortedBy { it.name }
+        .mapNotNull { onlineThemeSpec(it.name) }
 }
 
 fun themeById(id: String): WblThemeSpec {
@@ -188,9 +233,25 @@ fun themeById(id: String): WblThemeSpec {
         customThemeSpec()?.let { return it }
         return WBL_THEMES[0]
     }
+    if (id.startsWith(ONLINE_THEME_PREFIX)) {
+        onlineThemeSpec(id.removePrefix(ONLINE_THEME_PREFIX))?.let { return it }
+        return WBL_THEMES[0]
+    }
     return WBL_THEMES.firstOrNull { it.id == id } ?: WBL_THEMES[0]
 }
 
-/** 全部可选主题（含已启用的自定义照片主题） */
-fun allThemes(): List<WblThemeSpec> =
-    customThemeSpec()?.let { WBL_THEMES + it } ?: WBL_THEMES
+
+/** 获取所有可用主题（含自定义 + 已安装在线主题） */
+fun allThemes(): List<WblThemeSpec> {
+    val list = WBL_THEMES.toMutableList()
+    customThemeSpec()?.let { list.add(it) }
+    list.addAll(installedOnlineThemes())
+    return list
+}
+
+/** 当前是否为深色渲染（含强制深色主题） */
+@Composable
+fun wblIsDark(): Boolean {
+    val spec = LocalWblTheme.current
+    return spec.forceDark || isSystemInDarkTheme()
+}
