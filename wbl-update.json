@@ -1,18 +1,18 @@
 {
-  "versionCode": 10506,
-  "versionName": "1.5.6",
+  "versionCode": 10507,
+  "versionName": "1.5.7",
   "force": true,
-  "desc": "## 忘不了 v1.5.6 — 在线主题商店\n\n本版包含 v1.5.5 全部功能（通知精简、记一笔快捷面板），并带来全新在线主题系统：\n\n1. **发现页 · 主题商店**：6 套精选主题在线上架（极光 / 暮色 / 深海 / 夜樱 / 墨金 / 玻璃雨珠），封面预览、一键下载应用\n2. **动态主题**：「玻璃雨珠」动态主题首发 — 真实感雨珠滑落动画 + 玻璃质感背景，桌面焕然一新\n3. **多线路下载**：4 条下载线路自动切换容错，弱网也能顺利下载；下载进度环实时显示，支持断点续传\n4. **主题持久化**：已下载主题保存在本机，重启自动恢复无需重新下载；「已下载」角标标记，点击即刻切换\n\n升级方式：下载 APK 直接覆盖安装（签名一致，无需卸载）。",
-  "sha256": "39c0eac4ac46183440ece9edf20175cba550bf93864f02f16396c186b7db5b38",
-  "size": 12183153,
-  "fileName": "wbl-v1.5.6-vc10506.apk",
+  "desc": "## 忘不了 v1.5.7 — 毛玻璃新视觉 + 三款动态主题\n\n本版包含 v1.5.6 全部功能（在线主题商店），并带来全新视觉与更多动态主题：\n\n1. **三款新动态主题**：流萤之森（萤火明灭）/ 星陨之海（流星划过 + 星光闪烁）/ 落雪绵绵（静夜落雪），加上原有玻璃雨珠，动态主题共 4 款，主题商店累计 9 套\n2. **毛玻璃新视觉**：按钮、底部导航、各页顶栏全面毛玻璃化（半透明 + 模糊 + 描边），背景动画透出，界面更通透精致\n3. **导航栏跟随主题变色**：底部导航选中态与图标着色随主题 accent 色自动变化，切换主题即换装\n4. **主题下载更稳**：封面多线路下载 + 本地磁盘缓存，不再全黑；下载失败自动切换线路并清理残留，进度环实时准确\n\n升级方式：下载 APK 直接覆盖安装（签名一致，无需卸载）。",
+  "sha256": "b6bac11c4e997325948731236f94d0021d6e3f51939adb7d212cd6f6b116bc68",
+  "size": 12189125,
+  "fileName": "wbl-v1.5.7-vc10507.apk",
   "routes": [
     "https://onono2012.github.io/wangbuliao-todo/wbl-latest.apk",
-    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.6/wbl-v1.5.6-vc10506.apk",
-    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.6/wbl-v1.5.6-vc10506.apk",
-    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.6/wbl-v1.5.6-vc10506.apk",
-    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/562517663",
-    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.6/wbl-v1.5.6-vc10506.apk"
+    "https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.7/wbl-v1.5.7-vc10507.apk",
+    "https://gh-proxy.com/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.7/wbl-v1.5.7-vc10507.apk",
+    "https://ghproxy.net/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.7/wbl-v1.5.7-vc10507.apk",
+    "https://api.github.com/repos/onono2012/wangbuliao-todo/releases/assets/562801500",
+    "https://ghfast.top/https://github.com/onono2012/wangbuliao-todo/releases/download/v1.5.7/wbl-v1.5.7-vc10507.apk"
   ],
-  "publishedAt": "2026-09-14T03:52:39+0000"
+  "publishedAt": "2026-09-14T06:57:33+0000"
 }
