@@ -97,7 +97,6 @@ fun ThemeScreen(vm: MainViewModel) {
         }
     }
 
-    WblScreenBackground {
         Scaffold(
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -244,7 +243,7 @@ fun ThemeScreen(vm: MainViewModel) {
                     colors = CardDefaults.cardColors(containerColor = wblCardColor())
                 ) {
                     Column(Modifier.padding(14.dp)) {
-                        OutlinedButton(
+                        WblOutlinedButton(
                             onClick = {
                                 photoPicker.launch(
                                     PickVisualMediaRequest(
@@ -281,7 +280,7 @@ fun ThemeScreen(vm: MainViewModel) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f)
                                 )
-                                TextButton(onClick = {
+                                WblTextButton(onClick = {
                                     val f = File(customPhoto!!)
                                     if (f.exists()) f.delete()
                                     Prefs.setCustomPhoto(null)
@@ -295,5 +294,4 @@ fun ThemeScreen(vm: MainViewModel) {
                 }
             }
         }
-    }
 }

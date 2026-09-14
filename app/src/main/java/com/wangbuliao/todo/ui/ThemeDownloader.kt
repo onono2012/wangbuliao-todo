@@ -27,6 +27,8 @@ data class OnlineTheme(
     val downloadUrl: String?,
     val resolution: String = "",
     val fileSize: Long = 0L,
+    /** 主题强调色（#RRGGBB）；动态主题无壁纸取色时由内容源指定 */
+    val accent: String = "",
     val author: String = "",
     val createdAt: String = ""
 )
@@ -51,18 +53,38 @@ object ThemeSource {
     var lastOkRoute: Int = 0
         private set
 
+    /** 各线路最近失败时间戳（冷却 45s 内不重试，避免坏线路拖慢整体） */
+    private val failedAt = LongArray(ROUTES.size)
+
     fun markOk(idx: Int) {
-        if (idx in ROUTES.indices) lastOkRoute = idx
+        if (idx in ROUTES.indices) {
+            lastOkRoute = idx
+            failedAt[idx] = 0L
+        }
     }
 
-    /** 线路尝试顺序：上次成功线路优先，其余按序 */
-    fun orderedRoutes(): List<Int> =
-        ROUTES.indices.sortedWith(compareBy({ if (it == lastOkRoute) 0 else 1 }, { it }))
+    fun markFail(idx: Int) {
+        if (idx in ROUTES.indices) failedAt[idx] = System.currentTimeMillis()
+    }
+
+    /** 线路尝试顺序：上次成功线路优先 → 非冷却线路 → 冷却线路兜底 */
+    fun orderedRoutes(): List<Int> {
+        val now = System.currentTimeMillis()
+        return ROUTES.indices.sortedWith(
+            compareBy(
+                { if (it == lastOkRoute) 0 else 1 },
+                { if (now - failedAt[it] < COOLDOWN_MS) 1 else 0 },
+                { it }
+            )
+        )
+    }
 
     fun url(routeIdx: Int, rel: String): String = ROUTES[routeIdx] + rel
 
     /** 按当前最优线路拼相对路径的完整 URL（封面等） */
     fun urlBest(rel: String): String = url(lastOkRoute, rel)
+
+    private const val COOLDOWN_MS = 45_000L
 }
 
 /**
@@ -91,6 +113,7 @@ class ThemeDownloader(private val context: Context) {
                 return@withContext Result.success(list)
             } catch (e: Exception) {
                 lastEx = e
+                ThemeSource.markFail(idx)
                 Log.w(TAG, "fetch themes route $idx failed: ${e.message}")
             }
         }
@@ -115,11 +138,60 @@ class ThemeDownloader(private val context: Context) {
                 downloadUrl = o.optString("downloadUrl").trim().ifEmpty { null },
                 resolution = o.optString("resolution", "").trim(),
                 fileSize = o.optLong("fileSize", 0L),
+                accent = o.optString("accent", "").trim(),
                 author = o.optString("author", "").trim(),
                 createdAt = o.optString("createdAt", "").trim()
             )
         }
         return out
+    }
+
+    // ────────────── 封面缓存 ──────────────
+
+    /** 封面本地缓存目录 filesDir/themeCovers（持久化，二次进页秒开） */
+    private val coverDir: File
+        get() = File(context.filesDir, "themeCovers").also { it.mkdirs() }
+
+    /** 文件是否为 JPEG（魔数 FF D8），防止把错误页 HTML 存成封面 */
+    private fun isJpeg(f: File): Boolean = try {
+        f.inputStream().use {
+            val b = ByteArray(2)
+            it.read(b) == 2 && b[0] == 0xFF.toByte() && b[1] == 0xD8.toByte()
+        }
+    } catch (_: Exception) {
+        false
+    }
+
+    /**
+     * 获取主题封面：多线路下载 + 本地缓存。
+     * 命中缓存直接返回；未缓存按线路顺序下载并校验 JPEG 魔数后落盘。
+     * @return 封面文件；全部线路失败返回 null（UI 显示占位渐变）
+     */
+    suspend fun loadCoverFile(theme: OnlineTheme): File? = withContext(Dispatchers.IO) {
+        if (theme.coverUrl.isBlank()) return@withContext null
+        val cache = File(coverDir, theme.id + ".jpg")
+        if (cache.exists() && cache.length() > 2048 && isJpeg(cache)) return@withContext cache
+        val tmp = File(context.cacheDir, "cover_${theme.id}.tmp")
+        try {
+            for (idx in ThemeSource.orderedRoutes()) {
+                try {
+                    downloadOnce(ThemeSource.url(idx, theme.coverUrl), tmp) { }
+                    if (tmp.length() > 2048 && isJpeg(tmp)) {
+                        tmp.copyTo(cache, overwrite = true)
+                        ThemeSource.markOk(idx)
+                        Log.i(TAG, "cover ${theme.id} cached (${cache.length()}B via route $idx)")
+                        return@withContext cache
+                    }
+                    tmp.delete()
+                } catch (e: Exception) {
+                    ThemeSource.markFail(idx)
+                    Log.w(TAG, "cover route $idx failed: ${e.message}")
+                }
+            }
+            null
+        } finally {
+            tmp.delete()
+        }
     }
 
     // ────────────── 下载安装 ──────────────
@@ -153,11 +225,13 @@ class ThemeDownloader(private val context: Context) {
                 }
             }
 
-            val accent = if (theme.type == "dynamic") {
-                DEFAULT_ACCENT
-            } else {
-                extractAccent(File(dir, "wallpaper.jpg"))
-            }
+            // 内容源指定 accent 优先；静态未指定时从壁纸取色；动态未指定用默认
+            val accent = theme.accent.takeIf { it.startsWith("#") && it.length >= 7 }
+                ?: if (theme.type == "dynamic") {
+                    DEFAULT_ACCENT
+                } else {
+                    extractAccent(File(dir, "wallpaper.jpg"))
+                }
 
             val mf = JSONObject()
                 .put("id", theme.id)
@@ -197,6 +271,7 @@ class ThemeDownloader(private val context: Context) {
                 return n
             } catch (e: Exception) {
                 lastEx = e
+                ThemeSource.markFail(idx)
                 Log.w(TAG, "download route $idx failed: ${e.message}")
                 out.delete()
             }
@@ -210,8 +285,8 @@ class ThemeDownloader(private val context: Context) {
         var hops = 0
         while (true) {
             val conn = (URL(current).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 15_000
-                readTimeout = 60_000
+                connectTimeout = 8_000
+                readTimeout = 10_000  // 停滞检测：10s 无字节即弃线
                 instanceFollowRedirects = true
                 setRequestProperty("User-Agent", UA)
                 setRequestProperty("Accept", "*/*")
@@ -270,7 +345,7 @@ class ThemeDownloader(private val context: Context) {
         while (true) {
             val conn = (URL(current).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 12_000
-                readTimeout = 20_000
+                readTimeout = 10_000  // 停滞检测：10s 无字节即弃线
                 instanceFollowRedirects = true
                 setRequestProperty("User-Agent", UA)
                 setRequestProperty("Accept", "application/json, */*")

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>落雪绵绵</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent; }
+canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function(){
+  var cv=document.getElementById('c'),cx=cv.getContext('2d');
+  var W=0,H=0,bgGrad=null;
+  function resize(){
+    W=cv.width=innerWidth;H=cv.height=innerHeight;
+    bgGrad=cx.createLinearGradient(0,0,0,H);
+    bgGrad.addColorStop(0,'#141E28');
+    bgGrad.addColorStop(0.5,'#22303E');
+    bgGrad.addColorStop(1,'#2E4257');
+  }
+  resize();addEventListener('resize',resize);
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  // 三层雪：远→近（视差）
+  var layers=[
+    {n:34,rMin:0.6,rMax:1.1,aMin:0.18,aMax:0.30,spMin:0.010,spMax:0.020,sway:6},
+    {n:32,rMin:1.2,rMax:2.0,aMin:0.34,aMax:0.55,spMin:0.024,spMax:0.042,sway:12},
+    {n:26,rMin:2.2,rMax:3.6,aMin:0.60,aMax:0.85,spMin:0.048,spMax:0.080,sway:20}
+  ];
+  var flakes=[];
+  for(var L=0;L<layers.length;L++){
+    var l=layers[L];
+    for(var i=0;i<l.n;i++){
+      flakes.push({
+        x:Math.random(),y:Math.random(),
+        r:rnd(l.rMin,l.rMax),
+        a:rnd(l.aMin,l.aMax),
+        sp:rnd(l.spMin,l.spMax),
+        ph:rnd(0,6.2832),
+        sw:rnd(0.3,1.0)*l.sway,
+        f:rnd(0.4,1.0),
+        layer:L
+      });
+    }
+  }
+  var last=0;
+  function draw(t){
+    t*=0.001;
+    var dt=Math.min(0.05,t-last);last=t;
+    cx.fillStyle=bgGrad;cx.fillRect(0,0,W,H);
+    // 月光（右上角柔光）
+    var mx=W*0.86,my=H*0.08,mr=Math.min(W,H)*0.42;
+    var g=cx.createRadialGradient(mx,my,0,mx,my,mr);
+    g.addColorStop(0,'rgba(210,228,245,0.10)');
+    g.addColorStop(0.4,'rgba(200,220,240,0.05)');
+    g.addColorStop(1,'rgba(200,220,240,0)');
+    cx.fillStyle=g;
+    cx.beginPath();cx.arc(mx,my,mr,0,6.2832);cx.fill();
+    // 月亮本体
+    var g2=cx.createRadialGradient(mx,my,0,mx,my,mr*0.09);
+    g2.addColorStop(0,'rgba(240,246,255,0.55)');
+    g2.addColorStop(1,'rgba(240,246,255,0)');
+    cx.fillStyle=g2;
+    cx.beginPath();cx.arc(mx,my,mr*0.09,0,6.2832);cx.fill();
+    // 雪
+    for(var i=0;i<flakes.length;i++){
+      var f=flakes[i];
+      f.y+=f.sp*dt;
+      if(f.y>1.04){f.y=-0.04;f.x=Math.random();}
+      var px=f.x*W+Math.sin(t*f.f+f.ph)*f.sw;
+      var py=f.y*H;
+      cx.fillStyle='rgba(255,255,255,'+f.a+')';
+      cx.beginPath();cx.arc(px,py,f.r,0,6.2832);cx.fill();
+      // 近层雪加微光
+      if(f.layer===2){
+        var g3=cx.createRadialGradient(px,py,0,px,py,f.r*3.2);
+        g3.addColorStop(0,'rgba(235,245,255,'+(f.a*0.3)+')');
+        g3.addColorStop(1,'rgba(235,245,255,0)');
+        cx.fillStyle=g3;
+        cx.beginPath();cx.arc(px,py,f.r*3.2,0,6.2832);cx.fill();
+      }
+    }
+  }
+  var running=true;
+  function frame(t){draw(t);if(running)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',function(){
+    running=!document.hidden;
+    if(running){last=performance.now()*0.001;requestAnimationFrame(frame);}
+  });
+})();
+</script>
+</body>
+</html>

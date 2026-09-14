@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -129,6 +132,7 @@ fun ThemeGridScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent), modifier = wblTopBarModifier(),
                 title = { Text("发现更多主题") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -182,7 +186,7 @@ fun ThemeGridScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(20.dp))
-                        Button(onClick = { refreshTick++ }) {
+                        WblButton(onClick = { refreshTick++ }) {
                             Icon(
                                 Icons.Default.Refresh,
                                 contentDescription = null,
@@ -236,6 +240,8 @@ fun ThemeGridScreen(
 
 /**
  * 在线主题卡片：封面 + 类型角标 + 状态按钮（下载/进度/已下载）+ 名称描述。
+ * 封面：多线路下载 → 本地缓存（filesDir/themeCovers）→ Coil 读本地文件（秒开）；
+ * 下载中/失败显示主题色占位渐变，不再全黑。
  */
 @Composable
 private fun OnlineThemeCard(
@@ -245,9 +251,29 @@ private fun OnlineThemeCard(
     progress: Float,
     onClick: () -> Unit
 ) {
-    val coverUrl = remember(theme.coverUrl) {
-        if (theme.coverUrl.isEmpty()) null else ThemeSource.urlBest(theme.coverUrl)
+    val context = LocalContext.current
+    val downloader = remember { ThemeDownloader(context) }
+    var coverFile by remember(theme.id, theme.coverUrl) { mutableStateOf<java.io.File?>(null) }
+
+    // 异步拉取封面（命中缓存立即返回；否则多线路下载后落盘）
+    LaunchedEffect(theme.id, theme.coverUrl) {
+        if (theme.coverUrl.isNotEmpty()) {
+            coverFile = downloader.loadCoverFile(theme)
+        }
     }
+
+    // 占位渐变：按主题名哈希取两个稳定色相，保证同主题每次一致
+    val placeholder = remember(theme.id) {
+        val h = (theme.id.hashCode() and 0x7fffffff) % 360
+        val c1 = Color(
+            android.graphics.Color.HSVToColor(floatArrayOf(h.toFloat(), 0.55f, 0.42f))
+        )
+        val c2 = Color(
+            android.graphics.Color.HSVToColor(floatArrayOf(((h + 55) % 360).toFloat(), 0.62f, 0.28f))
+        )
+        listOf(c1, c2)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,18 +286,30 @@ private fun OnlineThemeCard(
                 .fillMaxWidth()
                 .aspectRatio(1f)
         ) {
-            if (coverUrl != null) {
+            // 底层占位渐变（封面未就绪 / 下载失败时可见，避免全黑）
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(placeholder)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (coverFile == null) {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.65f),
+                        modifier = Modifier.size(38.dp)
+                    )
+                }
+            }
+            // 封面图（本地文件，秒开）
+            val cf = coverFile
+            if (cf != null) {
                 Image(
-                    painter = rememberAsyncImagePainter(coverUrl),
+                    painter = rememberAsyncImagePainter(cf),
                     contentDescription = theme.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface)
                 )
             }
 

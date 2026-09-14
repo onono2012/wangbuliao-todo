@@ -2,6 +2,7 @@
 
 package com.wangbuliao.todo
 
+import com.wangbuliao.todo.ui.WblTextButton
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -75,6 +76,8 @@ import com.wangbuliao.todo.ui.ThemeGridScreen
 import com.wangbuliao.todo.ui.ThemeScreen
 import com.wangbuliao.todo.ui.TaskListScreen
 import com.wangbuliao.todo.ui.WblTheme
+import com.wangbuliao.todo.ui.WblScreenBackground
+import com.wangbuliao.todo.ui.WblGlassNavBar
 import com.wangbuliao.todo.ui.wblAccentColor
 import com.wangbuliao.todo.ui.wblCardColor
 import com.wangbuliao.todo.update.Updater
@@ -188,7 +191,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Box(Modifier.fillMaxSize()) {
+                // 背景 wash/照片/动态动画提升到全局层：延伸到底部导航下方，
+                // 配合毛玻璃导航（WblGlassNavBar）实现真实半透明透视
+                WblScreenBackground {
                     when (screen) {
                         // 编辑页全屏（无底部导航，专注输入）
                         Screen.Edit -> EditTaskScreen(vm, draft, ui)
@@ -199,11 +204,7 @@ class MainActivity : ComponentActivity() {
                                 containerColor = Color.Transparent,
                                 contentColor = MaterialTheme.colorScheme.onSurface,
                                 bottomBar = {
-                                    NavigationBar(
-                                        containerColor = wblCardColor(),
-                                        tonalElevation = 0.dp,
-                                        contentColor = MaterialTheme.colorScheme.onSurface
-                                    ) {
+                                    WblGlassNavBar {
                                         NavItem(screen, Screen.List, Icons.Outlined.Checklist, "待办") {
                                             vm.goScreen(Screen.List)
                                         }
@@ -391,14 +392,14 @@ private fun UpdateDialog() {
             }
         },
         confirmButton = {
-            TextButton(
+            WblTextButton(
                 onClick = { Updater.download(ctx, info) },
                 enabled = !up.downloading
             ) { Text(if (up.downloading) "下载中…" else "立即更新") }
         },
         dismissButton = {
             if (!info.force) {
-                TextButton(onClick = { Updater.dismissFound() }) { Text("以后再说") }
+                WblTextButton(onClick = { Updater.dismissFound() }) { Text("以后再说") }
             }
         }
     )
@@ -455,14 +456,14 @@ private fun CrashReportDialog() {
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            WblTextButton(onClick = {
                 clipboard.setText(AnnotatedString(text))
                 CrashReporter.markShown(ctx, f)
                 file = null
             }) { Text("复制日志") }
         },
         dismissButton = {
-            TextButton(onClick = {
+            WblTextButton(onClick = {
                 CrashReporter.markShown(ctx, f)
                 file = null
             }) { Text("知道了") }

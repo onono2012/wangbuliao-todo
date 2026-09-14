@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>流萤之森</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent; }
+canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function(){
+  var cv=document.getElementById('c'),cx=cv.getContext('2d');
+  var W=0,H=0;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;buildBg();}
+  var bgGrad=null;
+  function buildBg(){
+    bgGrad=cx.createLinearGradient(0,0,0,H);
+    bgGrad.addColorStop(0,'#060D0A');
+    bgGrad.addColorStop(0.55,'#0F1F16');
+    bgGrad.addColorStop(1,'#16281E');
+  }
+  resize();addEventListener('resize',resize);
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  // 暗绿散景（远景叶丛光斑）
+  var bokeh=[];
+  for(var i=0;i<9;i++){
+    bokeh.push({x:Math.random(),y:Math.random()*0.8,r:rnd(0.08,0.22),a:rnd(0.03,0.07)});
+  }
+  // 萤火虫
+  var N=46,flies=[];
+  for(var i=0;i<N;i++){
+    flies.push({
+      x:Math.random(),y:Math.random(),
+      r:rnd(1.1,2.8),
+      ph:rnd(0,Math.PI*2),
+      br:rnd(0.5,1.4),          // 呼吸频率
+      vx:rnd(-0.008,0.008),     // 漂移（占屏宽比例/秒）
+      vy:rnd(-0.006,0.006),
+      sw:rnd(0.3,0.9),          // 摆动幅度
+      sp:rnd(0.4,1.1)
+    });
+  }
+  var last=0;
+  function draw(t){
+    t*=0.001;
+    var dt=Math.min(0.05,t-last);last=t;
+    cx.fillStyle=bgGrad;cx.fillRect(0,0,W,H);
+    // 散景
+    for(var i=0;i<bokeh.length;i++){
+      var b=bokeh[i];
+      var g=cx.createRadialGradient(b.x*W,b.y*H,0,b.x*W,b.y*H,b.r*W);
+      g.addColorStop(0,'rgba(46,86,58,'+b.a+')');
+      g.addColorStop(1,'rgba(46,86,58,0)');
+      cx.fillStyle=g;
+      cx.beginPath();cx.arc(b.x*W,b.y*H,b.r*W,0,6.2832);cx.fill();
+    }
+    // 萤火
+    cx.globalCompositeOperation='lighter';
+    for(var i=0;i<N;i++){
+      var f=flies[i];
+      f.x+=f.vx*dt;f.y+=f.vy*dt;
+      if(f.x<-0.05)f.x=1.05;if(f.x>1.05)f.x=-0.05;
+      if(f.y<-0.05)f.y=1.05;if(f.y>1.05)f.y=-0.05;
+      var px=f.x*W+Math.sin(t*f.sp+f.ph)*f.sw*22;
+      var py=f.y*H+Math.cos(t*f.sp*0.8+f.ph)*f.sw*16;
+      var a=0.30+0.70*Math.abs(Math.sin(t*f.br+f.ph));
+      var R=f.r*7;
+      var g=cx.createRadialGradient(px,py,0,px,py,R);
+      g.addColorStop(0,'rgba(226,240,130,'+(a*0.95)+')');
+      g.addColorStop(0.25,'rgba(178,214,80,'+(a*0.5)+')');
+      g.addColorStop(1,'rgba(140,190,60,0)');
+      cx.fillStyle=g;
+      cx.beginPath();cx.arc(px,py,R,0,6.2832);cx.fill();
+      cx.fillStyle='rgba(245,255,200,'+a+')';
+      cx.beginPath();cx.arc(px,py,f.r*0.7,0,6.2832);cx.fill();
+    }
+    cx.globalCompositeOperation='source-over';
+  }
+  var running=true;
+  function frame(t){draw(t);if(running)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',function(){
+    running=!document.hidden;
+    if(running){last=performance.now()*0.001;requestAnimationFrame(frame);}
+  });
+})();
+</script>
+</body>
+</html>

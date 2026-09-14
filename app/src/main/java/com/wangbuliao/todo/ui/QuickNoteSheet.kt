@@ -147,7 +147,7 @@ fun QuickNoteSheet(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("记一笔", style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                TextButton(onClick = { onMore() }) { Text("更多选项") }
+                WblTextButton(onClick = { onMore() }) { Text("更多选项") }
             }
 
             // 内容输入

@@ -2,13 +2,18 @@ package com.wangbuliao.todo.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cottage
 import androidx.compose.material.icons.outlined.EditNote
@@ -19,16 +24,24 @@ import androidx.compose.material.icons.outlined.Pending
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -98,11 +111,11 @@ fun wblTopBarVeil(): Pair<Color, Float> {
     else Color.Black to ColorContrast.veilAlpha(lums, false)
 }
 
-/** 顶栏背景 Modifier：照片=深色遮罩；渐变=主题渐变+对比度补偿 veil；其余=默认 */
+/** 顶栏背景 Modifier：照片=深色遮罩；渐变=主题渐变+对比度补偿 veil；其余=毛玻璃；统一底部发丝线 */
 @Composable
 fun wblTopBarModifier(): Modifier {
     val spec = LocalWblTheme.current
-    return when {
+    val base = when {
         spec.bgRes != null || spec.photoPath != null -> Modifier.background(
             Brush.verticalGradient(
                 listOf(
@@ -121,7 +134,19 @@ fun wblTopBarModifier(): Modifier {
                     } else Modifier
                 )
         }
+        // 普通主题：毛玻璃顶栏（半透明 surface + 主题色 tint，透出页面 wash）
         else -> Modifier
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.45f))
+            .background(
+                Brush.verticalGradient(
+                    listOf(wblGlassTint().copy(alpha = 0.18f), Color.Transparent)
+                )
+            )
+    }
+    // 底部发丝描边：玻璃质感分界线
+    return base.drawBehind {
+        val hair = Color.White.copy(alpha = 0.12f)
+        drawLine(hair, Offset(0f, size.height - 1f), Offset(size.width, size.height - 1f), 1.5f)
     }
 }
 
@@ -355,3 +380,141 @@ fun WblSectionHead(
         Text(text, style = style, fontWeight = FontWeight.Bold)
     }
 }
+
+// ────────────── 毛玻璃体系（按钮 / 导航 / 顶栏） ──────────────
+
+/** 玻璃 tint 基色：主题渐变首色优先，无渐变用 primary（导航/顶栏/按钮统一取色 → 跟随主题变色） */
+@Composable
+fun wblGlassTint(): Color {
+    val spec = LocalWblTheme.current
+    return spec.gradient?.firstOrNull() ?: MaterialTheme.colorScheme.primary
+}
+
+/** 玻璃发丝描边色 */
+fun wblGlassHairline(): Color = Color.White.copy(alpha = 0.16f)
+
+/** 玻璃按钮内容色：按「卡片背景叠玻璃 tint」后的实际底色自动取黑/白，保证 WCAG 可读 */
+@Composable
+private fun wblGlassContentColor(): Color {
+    val s = MaterialTheme.colorScheme
+    val tint = wblGlassTint()
+    val bgArgb = ColorContrast.blendArgb(
+        ColorContrast.blendArgb(
+            s.surface.toArgb(), s.background.toArgb(), 0.86f
+        ), tint.toArgb(), 0.30f
+    )
+    return if (ColorContrast.preferDarkText(listOf(ColorContrast.relLuminance(bgArgb))))
+        Color(ColorContrast.NEAR_BLACK_ARGB) else Color.White
+}
+
+@Composable
+fun wblGlassButtonColors(): ButtonColors {
+    val s = MaterialTheme.colorScheme
+    val tint = wblGlassTint()
+    // 半透明 tint 实底（surface 30% + tint 30%），透出背景 wash = 玻璃感
+    val container = Color(
+        ColorContrast.blendArgb(s.surface.toArgb(), tint.toArgb(), 0.55f)
+    ).copy(alpha = 0.42f)
+    val content = wblGlassContentColor()
+    return ButtonDefaults.buttonColors(
+        containerColor = container,
+        contentColor = content,
+        disabledContainerColor = s.surface.copy(alpha = 0.12f),
+        disabledContentColor = s.onSurface.copy(alpha = 0.38f)
+    )
+}
+
+/** 主按钮（毛玻璃）：半透明主题 tint + 发丝描边 + 圆角 */
+@Composable
+fun WblButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Button(
+        onClick = onClick,
+        modifier = modifier.border(1.dp, wblGlassHairline(), shape),
+        enabled = enabled,
+        shape = shape,
+        colors = wblGlassButtonColors(),
+        content = content
+    )
+}
+
+/** 文字按钮（毛玻璃弱化版）：透明容器 + 强调色文字 */
+@Composable
+fun WblTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit
+) {
+    val s = MaterialTheme.colorScheme
+    TextButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = RoundedCornerShape(10.dp),
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = wblAccentColor(),
+            disabledContentColor = s.onSurface.copy(alpha = 0.38f)
+        ),
+        content = content
+    )
+}
+
+/** 描边按钮（毛玻璃）：半透明 tint 容器 + 主题色描边 */
+@Composable
+fun WblOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit
+) {
+    val s = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(12.dp)
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = shape,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = wblAccentColor()),
+        border = BorderStroke(
+            1.dp,
+            if (enabled) wblAccentColor().copy(alpha = 0.55f) else s.onSurface.copy(alpha = 0.2f)
+        ),
+        content = content
+    )
+}
+
+/**
+ * 毛玻璃底部导航条：半透明 surface + 主题 tint 渐变 + 顶部圆角 + 发丝描边。
+ * tint 取 wblGlassTint()（主题渐变首色/primary）→ 换主题导航条同步变色。
+ */
+@Composable
+fun WblGlassNavBar(content: @Composable RowScope.() -> Unit) {
+    val s = MaterialTheme.colorScheme
+    val tint = wblGlassTint()
+    val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(s.surface.copy(alpha = 0.52f))
+            .background(
+                Brush.verticalGradient(
+                    listOf(tint.copy(alpha = 0.24f), tint.copy(alpha = 0.10f))
+                )
+            )
+            .border(1.dp, wblGlassHairline(), shape)
+    ) {
+        NavigationBar(
+            containerColor = Color.Transparent,
+            tonalElevation = 0.dp,
+            content = content
+        )
+    }
+}
+

@@ -74,7 +74,6 @@ fun CalendarScreen(vm: MainViewModel, ui: UiState) {
         }.toSet()
     }
 
-    WblScreenBackground {
         Scaffold(
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -123,7 +122,7 @@ fun CalendarScreen(vm: MainViewModel, ui: UiState) {
                     IconButton(onClick = {
                         if (month == 12) { month = 1; year++ } else month++
                     }) { Icon(Icons.Outlined.ChevronRight, "下个月") }
-                    TextButton(onClick = {
+                    WblTextButton(onClick = {
                         year = today.year; month = today.monthValue; selected = today
                     }) { Text("今天") }
                 }
@@ -193,7 +192,6 @@ fun CalendarScreen(vm: MainViewModel, ui: UiState) {
                 )
             }
         }
-    }
 }
 
 private data class MonthCell(val date: LocalDate?)
@@ -344,7 +342,7 @@ private fun DayDetail(
                         )
                     }
                 }
-                TextButton(onClick = onAdd) {
+                WblTextButton(onClick = onAdd) {
                     Icon(Icons.Filled.Add, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(2.dp))
                     Text("新增")

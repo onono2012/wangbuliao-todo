@@ -1,5 +1,7 @@
 package com.wangbuliao.todo.media
 
+import com.wangbuliao.todo.ui.WblOutlinedButton
+import com.wangbuliao.todo.ui.WblTextButton
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -228,9 +230,9 @@ fun AudioSection(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(Modifier.weight(1f))
-                        OutlinedButton(onClick = { stopRecording(false) }) { Text("放弃") }
+                        WblOutlinedButton(onClick = { stopRecording(false) }) { Text("放弃") }
                         Spacer(Modifier.width(8.dp))
-                        OutlinedButton(onClick = { stopRecording(true) }) {
+                        WblOutlinedButton(onClick = { stopRecording(true) }) {
                             Icon(Icons.Filled.Stop, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("完成")
@@ -257,7 +259,7 @@ fun AudioSection(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = {
+                        WblTextButton(onClick = {
                             // 文件删除交给 VM 延迟处理（会话新增立即删；原任务附件保存/放弃时差量清理）
                             onClear()
                         }) {
@@ -272,7 +274,7 @@ fun AudioSection(
                 }
                 else -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = {
+                        WblOutlinedButton(onClick = {
                             if (hasPerm) {
                                 AudioNote.start(ctx)?.let { (r, f) ->
                                     recorder = r

@@ -169,7 +169,6 @@ fun SettingsScreen(vm: MainViewModel) {
         }
     }
 
-    WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -340,7 +339,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             )
                         }
                         if (!ignoring) {
-                            OutlinedButton(onClick = {
+                            WblOutlinedButton(onClick = {
                                 try {
                                     batteryOptLauncher.launch(
                                         Intent(
@@ -390,7 +389,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    OutlinedButton(onClick = {
+                    WblOutlinedButton(onClick = {
                         val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                             putExtra(
                                 RingtoneManager.EXTRA_RINGTONE_TYPE,
@@ -470,12 +469,12 @@ fun SettingsScreen(vm: MainViewModel) {
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
+                        WblButton(onClick = {
                             if (Prefs.davConfigured()) vm.doBackup() else showDavCfg = true
                         }, enabled = !bk.busy) {
                             Text(if (bk.busy) "处理中…" else "备份到云端")
                         }
-                        OutlinedButton(onClick = {
+                        WblOutlinedButton(onClick = {
                             if (Prefs.davConfigured()) showCloudRestoreConfirm = true else showDavCfg = true
                         }, enabled = !bk.busy) {
                             Text("从云端恢复")
@@ -490,13 +489,13 @@ fun SettingsScreen(vm: MainViewModel) {
                             title = { Text("从云端恢复") },
                             text = { Text("将用云端备份覆盖当前全部任务数据与照片主题，完成后应用自动重启。\n\n当前数据会先在本地兜底备份（files/pre_restore/）。确定继续？") },
                             confirmButton = {
-                                TextButton(onClick = {
+                                WblTextButton(onClick = {
                                     showCloudRestoreConfirm = false
                                     vm.doRestore()
                                 }) { Text("恢复") }
                             },
                             dismissButton = {
-                                TextButton(onClick = { showCloudRestoreConfirm = false }) { Text("取消") }
+                                WblTextButton(onClick = { showCloudRestoreConfirm = false }) { Text("取消") }
                             }
                         )
                     }
@@ -530,11 +529,11 @@ fun SettingsScreen(vm: MainViewModel) {
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { localBackup.launch(BackupManager.localBackupName()) },
+                        WblButton(onClick = { localBackup.launch(BackupManager.localBackupName()) },
                             enabled = !bk.busy) {
                             Text(if (bk.busy) "处理中…" else "备份到本机")
                         }
-                        OutlinedButton(onClick = { localRestorePick.launch(arrayOf("application/zip")) },
+                        WblOutlinedButton(onClick = { localRestorePick.launch(arrayOf("application/zip")) },
                             enabled = !bk.busy) {
                             Text("从本机恢复")
                         }
@@ -545,13 +544,13 @@ fun SettingsScreen(vm: MainViewModel) {
                             title = { Text("从本机恢复") },
                             text = { Text("将用所选备份文件覆盖当前全部任务数据与照片主题，完成后应用自动重启。\n\n当前数据会先在本地兜底备份（files/pre_restore/）。确定继续？") },
                             confirmButton = {
-                                TextButton(onClick = {
+                                WblTextButton(onClick = {
                                     pendingLocalRestore = null
                                     vm.doLocalRestore(uri)
                                 }) { Text("恢复") }
                             },
                             dismissButton = {
-                                TextButton(onClick = { pendingLocalRestore = null }) { Text("取消") }
+                                WblTextButton(onClick = { pendingLocalRestore = null }) { Text("取消") }
                             }
                         )
                     }
@@ -591,13 +590,13 @@ fun SettingsScreen(vm: MainViewModel) {
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
+                        WblButton(
                             onClick = { vm.checkUpdate() },
                             enabled = !up.checking && !up.downloading
                         ) { Text(if (up.checking) "检查中…" else "检查更新") }
                         val f = up.downloadedFile
                         if (f != null) {
-                            OutlinedButton(onClick = {
+                            WblOutlinedButton(onClick = {
                                 Updater.install(ctx, File(f))
                             }) { Text("安装已下载版本") }
                         }
@@ -647,7 +646,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             )
                         }
                         if (!notifGranted) {
-                            OutlinedButton(onClick = {
+                            WblOutlinedButton(onClick = {
                                 if (Build.VERSION.SDK_INT >= 33) {
                                     notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 }
@@ -669,7 +668,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             )
                         }
                         if (!exact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            OutlinedButton(onClick = {
+                            WblOutlinedButton(onClick = {
                                 try {
                                     ctx.startActivity(
                                         Intent(
@@ -740,7 +739,6 @@ fun SettingsScreen(vm: MainViewModel) {
             }
         }
     }
-    }
 }
 
 /**
@@ -785,7 +783,7 @@ private fun DavConfigDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(
+            WblTextButton(
                 onClick = {
                     Prefs.setDavConfig(davUrl, davUser, davPass)
                     onDismiss()
@@ -793,7 +791,7 @@ private fun DavConfigDialog(onDismiss: () -> Unit) {
                 enabled = davUrl.isNotBlank() && davUser.isNotBlank() && davPass.isNotBlank()
             ) { Text("保存") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+        dismissButton = { WblTextButton(onClick = onDismiss) { Text("取消") } }
     )
 }
 

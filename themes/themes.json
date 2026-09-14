@@ -72,6 +72,45 @@
    "fileSize": 736979,
    "author": "wbl",
    "createdAt": "2026-09-14"
+  },
+  {
+   "id": "firefly",
+   "name": "流萤之森",
+   "desc": "森林萤火呼吸闪烁(动态主题)",
+   "type": "dynamic",
+   "coverUrl": "covers/firefly.jpg",
+   "downloadUrl": "packs/firefly.zip",
+   "accent": "#9BC53D",
+   "resolution": "auto",
+   "fileSize": 1629,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "meteor",
+   "name": "星陨之海",
+   "desc": "星海流星划夜空(动态主题)",
+   "type": "dynamic",
+   "coverUrl": "covers/meteor.jpg",
+   "downloadUrl": "packs/meteor.zip",
+   "accent": "#5B8DB8",
+   "resolution": "auto",
+   "fileSize": 1961,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "snow",
+   "name": "落雪绵绵",
+   "desc": "月夜三层视差落雪(动态主题)",
+   "type": "dynamic",
+   "coverUrl": "covers/snow.jpg",
+   "downloadUrl": "packs/snow.zip",
+   "accent": "#9CC3D5",
+   "resolution": "auto",
+   "fileSize": 1632,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
   }
  ]
 }

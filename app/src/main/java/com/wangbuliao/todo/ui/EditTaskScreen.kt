@@ -206,7 +206,7 @@ fun RemindPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            WblTextButton(onClick = {
                 val c = Calendar.getInstance().apply {
                     timeInMillis = today.timeInMillis + dayOffset * 86400000L
                     set(Calendar.HOUR_OF_DAY, hour)
@@ -217,7 +217,7 @@ fun RemindPickerDialog(
                 onConfirm(c.timeInMillis)
             }) { Text("确定") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+        dismissButton = { WblTextButton(onClick = onDismiss) { Text("取消") } }
     )
 }
 
@@ -267,7 +267,6 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
         }
     }
 
-    WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -360,7 +359,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                                 }
                             )
                         }
-                        OutlinedButton(onClick = { showCatDialog = true }) {
+                        WblOutlinedButton(onClick = { showCatDialog = true }) {
                             Icon(Icons.Filled.Add, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("新分类")
@@ -508,12 +507,12 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        OutlinedButton(onClick = { showPicker = true }) {
+                        WblOutlinedButton(onClick = { showPicker = true }) {
                             Text(if (draft.remindAt > 0) "修改" else "设置")
                         }
                         if (draft.remindAt > 0) {
                             Spacer(Modifier.padding(start = 6.dp))
-                            TextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0, repeat = 0) } }) {
+                            WblTextButton(onClick = { vm.updateDraft { it.copy(remindAt = 0, repeat = 0) } }) {
                                 Text("清除", color = MaterialTheme.colorScheme.error)
                             }
                         }
@@ -548,7 +547,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
         } // 滚动区结束
 
         // ⑥ 底部常驻保存栏：任何滚动位置都可见，无需翻到页尾保存
-        Button(
+        WblButton(
             onClick = { vm.saveDraft() },
             modifier = Modifier.padding(horizontal = 16.dp)
                 .fillMaxWidth().height(52.dp)
@@ -559,7 +558,6 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
         }
         Spacer(Modifier.height(10.dp))
         } // 外层 Column 结束
-    }
     }
 
     if (showPicker) {
@@ -586,7 +584,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                WblTextButton(onClick = {
                     if (newCat.trim().isNotEmpty()) {
                         vm.addCategory(newCat)
                         newCat = ""
@@ -595,7 +593,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 }) { Text("添加") }
             },
             dismissButton = {
-                TextButton(onClick = { showCatDialog = false }) { Text("取消") }
+                WblTextButton(onClick = { showCatDialog = false }) { Text("取消") }
             }
         )
     }
@@ -609,7 +607,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showImageViewer = null }) { Text("关闭") }
+                WblTextButton(onClick = { showImageViewer = null }) { Text("关闭") }
             }
         )
     }
@@ -619,13 +617,13 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
             title = { Text("删除事项") },
             text = { Text("确定删除「${draft.title}」吗？其录音与图片附件将一并删除，不可恢复。") },
             confirmButton = {
-                TextButton(onClick = {
+                WblTextButton(onClick = {
                     showDeleteConfirm = false
                     vm.deleteDraftTask()
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+                WblTextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
             }
         )
     }
@@ -637,7 +635,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 Text("本次修改尚未保存。放弃后，已填写的内容和新拍摄/选择的图片、录音将被丢弃。")
             },
             confirmButton = {
-                TextButton(onClick = {
+                WblTextButton(onClick = {
                     showDiscardConfirm = false
                     vm.discardDraft()
                 }) {
@@ -645,7 +643,7 @@ fun EditTaskScreen(vm: MainViewModel, draft: EditDraft, ui: UiState) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardConfirm = false }) { Text("继续编辑") }
+                WblTextButton(onClick = { showDiscardConfirm = false }) { Text("继续编辑") }
             }
         )
     }

@@ -83,7 +83,6 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
     var showQuickSheet by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
 
-    WblScreenBackground {
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -326,7 +325,6 @@ fun TaskListScreen(vm: MainViewModel, ui: UiState) {
             }
         }
     }
-    }
 
     if (showQuickNote) {
         QuickNoteDialog(
@@ -373,7 +371,7 @@ fun QuickNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
             )
         },
         confirmButton = {
-            TextButton(
+            WblTextButton(
                 onClick = {
                     val t = text.trim()
                     if (t.isNotEmpty()) onSave(t)
@@ -382,7 +380,7 @@ fun QuickNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
             ) { Text("保存") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            WblTextButton(onClick = onDismiss) { Text("取消") }
         }
     )
 }
@@ -560,13 +558,13 @@ private fun TaskCard(task: Task, vm: MainViewModel) {
             title = { Text("删除事项") },
             text = { Text("确定删除「${task.title}」吗？其录音与图片附件将一并删除，不可恢复。") },
             confirmButton = {
-                TextButton(onClick = {
+                WblTextButton(onClick = {
                     showDeleteConfirm = false
                     vm.deleteTask(task)
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+                WblTextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
             }
         )
     }

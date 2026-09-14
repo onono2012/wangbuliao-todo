@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>星陨之海</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent; }
+canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function(){
+  var cv=document.getElementById('c'),cx=cv.getContext('2d');
+  var W=0,H=0,bgGrad=null;
+  function resize(){
+    W=cv.width=innerWidth;H=cv.height=innerHeight;
+    bgGrad=cx.createLinearGradient(0,0,0,H);
+    bgGrad.addColorStop(0,'#04070F');
+    bgGrad.addColorStop(0.5,'#0A1428');
+    bgGrad.addColorStop(1,'#14243F');
+  }
+  resize();addEventListener('resize',resize);
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  // 星星
+  var NS=140,stars=[];
+  for(var i=0;i<NS;i++){
+    stars.push({x:Math.random(),y:Math.random(),r:rnd(0.4,1.5),ph:rnd(0,6.2832),sp:rnd(0.4,1.6),warm:Math.random()<0.18});
+  }
+  // 银河柔光带（三个大散景）
+  var neb=[{x:0.18,y:0.14,r:0.34,a:0.05,c:'90,130,200'},
+           {x:0.72,y:0.34,r:0.42,a:0.045,c:'120,110,190'},
+           {x:0.42,y:0.62,r:0.38,a:0.035,c:'70,120,180'}];
+  // 流星
+  var meteors=[],nextSpawn=1.0;
+  function spawnMeteor(t){
+    var edge=Math.random();
+    var x0=rnd(0.05,0.95),y0=rnd(-0.05,0.25);
+    var ang=rnd(0.55,0.95);            // 弧度：右下方向
+    var sp=rnd(0.55,1.05);             // 屏宽比例/秒
+    meteors.push({
+      x:x0,y:y0,
+      vx:Math.cos(ang)*sp,
+      vy:Math.sin(ang)*sp,
+      life:0,max:rnd(0.7,1.3),
+      len:rnd(0.08,0.16),
+      hue:Math.random()<0.3?'190,210,255':'235,240,255'
+    });
+  }
+  var last=0;
+  function draw(t){
+    t*=0.001;
+    var dt=Math.min(0.05,t-last);last=t;
+    cx.fillStyle=bgGrad;cx.fillRect(0,0,W,H);
+    // 银河散景
+    for(var i=0;i<neb.length;i++){
+      var b=neb[i];
+      var g=cx.createRadialGradient(b.x*W,b.y*H,0,b.x*W,b.y*H,b.r*W);
+      g.addColorStop(0,'rgba('+b.c+','+b.a+')');
+      g.addColorStop(1,'rgba('+b.c+',0)');
+      cx.fillStyle=g;
+      cx.beginPath();cx.arc(b.x*W,b.y*H,b.r*W,0,6.2832);cx.fill();
+    }
+    // 星星闪烁
+    for(var i=0;i<NS;i++){
+      var s=stars[i];
+      var a=0.25+0.75*Math.abs(Math.sin(t*s.sp+s.ph));
+      cx.fillStyle=s.warm?'rgba(255,235,205,'+a+')':'rgba(230,240,255,'+a+')';
+      cx.beginPath();cx.arc(s.x*W,s.y*H,s.r,0,6.2832);cx.fill();
+    }
+    // 流星生成
+    nextSpawn-=dt;
+    if(nextSpawn<=0){spawnMeteor(t);nextSpawn=rnd(1.4,4.2);}
+    // 流星绘制
+    cx.globalCompositeOperation='lighter';
+    cx.lineCap='round';
+    for(var i=meteors.length-1;i>=0;i--){
+      var m=meteors[i];
+      m.life+=dt;
+      if(m.life>m.max||m.x>1.3||m.y>1.3){meteors.splice(i,1);continue;}
+      m.x+=m.vx*dt;m.y+=m.vy*dt;
+      var fade=Math.sin(Math.PI*(m.life/m.max));   // 淡入淡出
+      var hx=m.x*W,hy=m.y*H;
+      var tx=hx-m.vx*m.len*W,ty=hy-m.vy*m.len*W;
+      var g=cx.createLinearGradient(tx,ty,hx,hy);
+      g.addColorStop(0,'rgba('+m.hue+',0)');
+      g.addColorStop(1,'rgba('+m.hue+','+(0.85*fade)+')');
+      cx.strokeStyle=g;
+      cx.lineWidth=1.8;
+      cx.beginPath();cx.moveTo(tx,ty);cx.lineTo(hx,hy);cx.stroke();
+      // 流星头光点
+      var g2=cx.createRadialGradient(hx,hy,0,hx,hy,7);
+      g2.addColorStop(0,'rgba(255,255,255,'+(0.9*fade)+')');
+      g2.addColorStop(1,'rgba(255,255,255,0)');
+      cx.fillStyle=g2;
+      cx.beginPath();cx.arc(hx,hy,7,0,6.2832);cx.fill();
+    }
+    cx.globalCompositeOperation='source-over';
+  }
+  var running=true;
+  function frame(t){draw(t);if(running)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',function(){
+    running=!document.hidden;
+    if(running){last=performance.now()*0.001;requestAnimationFrame(frame);}
+  });
+})();
+</script>
+</body>
+</html>
