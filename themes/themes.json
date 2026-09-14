@@ -1,0 +1,77 @@
+{
+ "version": 1,
+ "themes": [
+  {
+   "id": "aurora",
+   "name": "极光霜华",
+   "desc": "冰蓝紫极光摇曳 · 满天星子",
+   "type": "static",
+   "coverUrl": "covers/aurora.jpg",
+   "downloadUrl": "wallpapers/aurora.jpg",
+   "resolution": "1080p",
+   "fileSize": 263355,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "dusk",
+   "name": "暮色霞光",
+   "desc": "暖橙紫罗兰晚霞 · 落日余晖",
+   "type": "static",
+   "coverUrl": "covers/dusk.jpg",
+   "downloadUrl": "wallpapers/dusk.jpg",
+   "resolution": "1080p",
+   "fileSize": 282309,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "abyss",
+   "name": "深海幽蓝",
+   "desc": "幽暗深海 · 青色光洄",
+   "type": "static",
+   "coverUrl": "covers/abyss.jpg",
+   "downloadUrl": "wallpapers/abyss.jpg",
+   "resolution": "1080p",
+   "fileSize": 222066,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "sakura",
+   "name": "夜樱雾霭",
+   "desc": "粉紫夜色 · 朦胧光斑",
+   "type": "static",
+   "coverUrl": "covers/sakura.jpg",
+   "downloadUrl": "wallpapers/sakura.jpg",
+   "resolution": "1080p",
+   "fileSize": 270575,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "gold",
+   "name": "墨金流沙",
+   "desc": "黑金粒子 · 流光溢彩",
+   "type": "static",
+   "coverUrl": "covers/gold.jpg",
+   "downloadUrl": "wallpapers/gold.jpg",
+   "resolution": "1080p",
+   "fileSize": 252999,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  },
+  {
+   "id": "glass-rain",
+   "name": "玻璃雨珠",
+   "desc": "实时玻璃雨滴物理动画(动态主题)",
+   "type": "dynamic",
+   "coverUrl": "covers/glass-rain.jpg",
+   "downloadUrl": "packs/glass-rain.zip",
+   "resolution": "auto",
+   "fileSize": 736979,
+   "author": "wbl",
+   "createdAt": "2026-09-14"
+  }
+ ]
+}
