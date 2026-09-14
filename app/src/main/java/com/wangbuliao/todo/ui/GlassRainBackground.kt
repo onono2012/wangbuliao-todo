@@ -71,6 +71,39 @@ private class TransparentWebView(context: Context) : WebView(context) {
                 // 阻止任何导航（包括 hash 变化等）
                 return true
             }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?,
+                error: android.webkit.WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                android.util.Log.e(
+                    "WblDynBg",
+                    "onReceivedError url=${request?.url} code=${error?.errorCode} desc=${error?.description}"
+                )
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                android.util.Log.i("WblDynBg", "onPageFinished url=$url")
+            }
+        }
+
+        // 调试：转发 JS console 错误到 logcat（仅 ERROR/TIP 级别，防止动画页 LOG 刷屏）
+        webChromeClient = object : android.webkit.WebChromeClient() {
+            override fun onConsoleMessage(msg: android.webkit.ConsoleMessage?): Boolean {
+                val lvl = msg?.messageLevel()
+                if (lvl == android.webkit.ConsoleMessage.MessageLevel.ERROR ||
+                    lvl == android.webkit.ConsoleMessage.MessageLevel.TIP
+                ) {
+                    android.util.Log.w(
+                        "WblDynBg",
+                        "console[$lvl] ${msg?.message()} @${msg?.sourceId()}:${msg?.lineNumber()}"
+                    )
+                }
+                return true
+            }
         }
 
         // 关键配置：拦截所有触摸事件，让事件传递到下层 Compose 内容

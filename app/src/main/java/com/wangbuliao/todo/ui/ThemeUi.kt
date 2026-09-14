@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
@@ -167,8 +168,12 @@ fun WblScreenBackground(content: @Composable BoxScope.() -> Unit) {
     }
     Box(Modifier.fillMaxSize()) {
         // 动态主题：最底层放置 WebView 动画层
+        // key(dynUrl)：切换主题 URL 时强制重建 WebView 实例——
+        // 否则复用旧实例仅 loadUrl，rAF 渲染循环可能不恢复（热切换后动画冻死/黑屏），重启才恢复。
         if (dynUrl != null) {
-            GlassRainBackground(dynUrl, Modifier.fillMaxSize())
+            key(dynUrl) {
+                GlassRainBackground(dynUrl, Modifier.fillMaxSize())
+            }
         }
         when {
             spec.photoPath != null -> {

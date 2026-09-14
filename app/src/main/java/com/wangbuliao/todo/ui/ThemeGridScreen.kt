@@ -130,6 +130,8 @@ fun ThemeGridScreen(
     }
 
     Scaffold(
+        // 关键：透明容器——默认不透明 background 会盖住全局 WblScreenBackground 的动态主题 WebView 动画层
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent), modifier = wblTopBarModifier(),

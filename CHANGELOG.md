@@ -1,5 +1,20 @@
 # 更新日志
 
+## v1.5.7 (10507) — 毛玻璃 UI 体系 + 在线主题下载加固 + 3 套新动态主题
+
+- 🧊 毛玻璃 UI 体系：WblButton/WblTextButton/WblOutlinedButton 全局替换 47 处，半透明毛玻璃按钮随主题 tint 变色；WblGlassNavBar 底部导航栏跟随主题变色；5 个顶栏全透明化（wblTopBarModifier）
+- 🖼️ WblScreenBackground 提升至 MainActivity 全局单实例：动态主题 WebView 动画层 → 照片/静态背景 → 毛玻璃渐变 wash，全屏幕共用一个动画层，切页不再重建
+- 🔥 新增 3 套动态主题（自包含 canvas 动画，零外部依赖）：流萤之森 firefly（森林萤火呼吸闪烁）、星陨之海 meteor（星空闪烁+偶发流星划过）、落雪绵绵 snow（雪花连绵飘落）；PIL 生成 648×360 封面，themes.json 上线（现共 9 套主题）
+- ⬇️ 主题下载加固：readTimeout 20s→10s + 停滞检测；downloadRouted 6 线路冷却切换；封面多线路下载 + filesDir/themeCovers 磁盘缓存 + Coil 本地加载 + 占位兜底，杜绝封面全黑
+- 🩹 真机 E2E 修复：发现页 Scaffold containerColor 透明化（原不透明背景盖住全局动画层）；key(dynUrl) 强制主题切换时重建 WebView 实例（防热切换 rAF 冻死）；WblDynBg 诊断日志（页面加载生命周期 + JS console ERROR 级转发）
+
+### 真机验证（realme RMX3888, ColorOS/Android 16）
+- 发现页封面全非黑：流萤=森林绿(1125 独特色)/星陨=深海蓝(848)/落雪=雪青灰(589)，多线路下载缓存+Coil 本地加载生效
+- 动画帧率实测：glass-rain 19.45%(列表)/8.14%(发现页,透明修复后可见)、firefly 8%、snow 1.44%(热切换)、meteor ~0.2%(稀疏星光闪烁为设计预期，插桩页证实 rAF 60fps 稳定无 JS 错误)
+- 热切换链路 glass-rain→meteor→snow→firefly 全部一次成功，key(dynUrl) 重建 WebView 生效无冻死
+- 导航栏/顶栏 tint 跟随主题：snow=蓝白(68,84,94)、firefly=绿(68,85,36)，与 accent 色一致
+- 深海幽蓝下载一次成功(222066B, accent=#0C93A8)，10s 停滞检测+6 线路切换生效
+
 ## v1.5.2 (10502) — 备份双通道重构 + 悬浮窗可关闭
 
 - ☁️🗄️ 数据备份拆分为「云端备份」「本地备份」两个独立区块：云端走自备 WebDAV，本地经系统文件选择器（SAF）导出/导入备份 zip，无需网络与账号、零存储权限
